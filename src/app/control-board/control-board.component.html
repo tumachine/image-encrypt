@@ -1,0 +1,5 @@
+<div *ngIf="pixel">
+  <div>{{ pixel.position.x }} {{ pixel.position.y }}</div>
+  <div>{{ pixel.color.r }} {{ pixel.color.g }} {{ pixel.color.b }}</div>
+  <div class="w-12 h-12" [style.background-color]="pixel.color.toRGB()"></div>
+</div>

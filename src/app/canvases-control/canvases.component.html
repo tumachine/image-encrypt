@@ -1,0 +1,20 @@
+<div class="grid h-screen gap-1 bg-black" [ngClass]="gridClass">
+  <app-canvas
+    *ngFor="let canvas of canvases; let index = index"
+    [image]="image"
+    [setViewState]="viewState"
+    (viewState)="updateViewState($event)"
+    (click)="canvasClick(index)"
+  >
+<!--    [setViewState]="index === selectedCanvas ? null : viewState"-->
+<!--    class="grid-span-1"-->
+<!--    [ngClass]="canvas.style"-->
+    <!--    (mouseenter)="mouseHover(index)"-->
+    <!--    (mouseleave)="mouseHover(null)"-->
+  </app-canvas>
+<!--  <app-canvas class="col-span-2" (click)="canvasClick($event)" [imageSrc]="imageSrc" (viewState)="updateViewState($event)"></app-canvas>-->
+<!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
+<!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
+  <!--  <app-control-board class="absolute m-4 p-10 border border-4" [pixel]="pixel"></app-control-board>-->
+  <button class="absolute" (click)="add()">RIGHT</button>
+</div>
