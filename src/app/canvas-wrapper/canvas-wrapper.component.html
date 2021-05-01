@@ -1,0 +1,25 @@
+<app-canvas>
+  <div *ngIf="pixel" class="absolute p-4 top-4 left-4 border-2 border-black bg-white flex justify-center align-middle">
+    <div class="flex mx-2 flex-col items-center">
+      <div class="w-12 h-12 border" [style.background-color]="'rgb('+pixel.color.r+', 0, 0)'"></div>
+      <div class="text-center">{{ pixel.color.r}}</div>
+      <div class="text-center">{{ pixel.binary.r }}</div>
+    </div>
+    <div class="flex mx-2 flex-col items-center">
+      <div class="w-12 h-12 border" [style.background-color]="'rgb(0, '+pixel.color.g+', 0)'"></div>
+      <div class="text-center">{{ pixel.color.g}}</div>
+      <div class="text-center">{{ pixel.binary.g }}</div>
+    </div>
+    <div class="flex mx-2 flex-col items-center">
+      <div class="w-12 h-12 border" [style.background-color]="'rgb(0, 0, '+pixel.color.b+')'"></div>
+      <div class="text-center">{{ pixel.color.b}}</div>
+      <div class="text-center">{{ pixel.binary.b }}</div>
+    </div>
+    <div class="flex mx-2 flex-col items-center">
+      <div class="w-12 h-12 border" [style.background-color]="'rgb('+pixel.color.a+', '+pixel.color.a+', '+pixel.color.a+')'"></div>
+      <div class="text-center">{{ pixel.color.a }}</div>
+      <div class="text-center">{{ pixel.binary.a }}</div>
+    </div>
+  </div>
+<!--  <button (click)="change()">CHANGE</button>-->
+</app-canvas>

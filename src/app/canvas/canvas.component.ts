@@ -1,14 +1,12 @@
 import {
-  EventEmitter,
   Component,
   ElementRef,
   NgZone,
-  Output,
   Renderer2,
   ViewChild,
   ChangeDetectionStrategy,
-  Input,
-  ChangeDetectorRef, OnInit, HostListener
+  ChangeDetectorRef,
+  HostListener
 } from '@angular/core';
 
 export class Vector {
@@ -59,34 +57,15 @@ export class Pixel {
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'app-canvas overflow-hidden bg-gray-400' },
+  host: { class: 'app-canvas overflow-hidden block w-full h-full relative bg-gray-400' },
 })
 export class CanvasComponent {
-  @Input()
-  set image(image: HTMLImageElement) {
-    this.loadImage(image);
-  }
-
-  @Input()
-  set setViewState(viewState: CanvasViewState) {
-    if (viewState && !this.mouseHovered) {
-      const { center, scale } = viewState;
-      const { clientWidth, clientHeight } = this.elRef.nativeElement;
-      this.pos.x = clientWidth / 2 - center.x * scale;
-      this.pos.y = clientHeight / 2 - center.y * scale;
-      this.scale = scale;
-      this.updateTransform();
-    }
-  }
-
-  @Output()
-  pixelOutput = new EventEmitter<Pixel | null>();
-
-  @Output()
-  viewState = new EventEmitter<CanvasViewState>();
-
   @ViewChild('canvas', { static: true })
-  canvasRef!: ElementRef<HTMLCanvasElement>;
+  set canvasEl(canvasRef: ElementRef<HTMLCanvasElement>) {
+    this.canvasRef = canvasRef;
+    this.ctx = canvasRef.nativeElement.getContext('2d');
+    this.canvas = canvasRef.nativeElement;
+  }
 
   @ViewChild('container', { static: true })
   containerRef!: ElementRef<HTMLDivElement>;
@@ -147,53 +126,37 @@ export class CanvasComponent {
     this.updatePosition();
   }
 
+  @HostListener('window:resize', ['$event'])
+  windowResize(event: Event) {
+    this.onResize();
+  }
+
   private mouseIsDown: boolean = false;
 
-  private scale = 0;
   private minScale = 0;
   private maxScale = 0;
 
-  private pos = new Vector();
   private limitMin = new Vector();
   private limitMax = new Vector();
 
-  private mouseHovered = false;
-
   private scaleMultiplier: number = 1.5;
-
   private startDragOffset = new Vector();
 
-  private ctx!: CanvasRenderingContext2D | null;
-  private canvas!: HTMLCanvasElement;
+  scale = 0;
 
-  constructor(private ngZone: NgZone, private renderer: Renderer2, private elRef: ElementRef, private cdRef: ChangeDetectorRef) {}
+  pos = new Vector();
+  mouseHovered = false;
 
-  loadImage(image: HTMLImageElement) {
-    this.ctx = this.canvasRef.nativeElement.getContext('2d');
-    this.canvas = this.canvasRef.nativeElement;
+  ctx!: CanvasRenderingContext2D | null;
+  canvas!: HTMLCanvasElement;
+  canvasRef!: ElementRef<HTMLCanvasElement>;
 
-    this.canvas.width = image.width;
-    this.canvas.height = image.height;
+  onViewStateChange!: () => any;
+  onCanvasHover!: (position: Vector | null) => any;
 
-    this.onResize();
-
-    if (this.ctx) {
-      this.ctx.drawImage(image, 0,0, this.canvas.width, this.canvas.height);
-    }
-    // const pixels: Pixel[] = [];
-    // for (let i = 0; i < this.image.width; i++) {
-    //   const position = new Vector(i, 0);
-    //   const color = new Color(255, 0, 0, 255);
-    //   pixels.push(new Pixel(position, color));
-    // }
-    // this.fillPixels(...pixels);
-
-    // image.src = link;
-    // image.crossOrigin = 'Anonymous';
-  }
+  constructor(private ngZone: NgZone, private renderer: Renderer2, public elRef: ElementRef, private cdRef: ChangeDetectorRef) {}
 
   onResize() {
-    console.log('resize')
     const { offsetWidth, offsetHeight } = this.elRef.nativeElement;
     // center image
     if (this.canvas.width / this.canvas.height > offsetWidth / offsetHeight) {
@@ -217,9 +180,9 @@ export class CanvasComponent {
   updatePosition() {
     this.constrictPosition();
     this.updateTransform();
-
-    const center = this.getCenter();
-    this.viewState.emit({ scale: this.scale, center });
+    if (this.onViewStateChange) {
+      this.onViewStateChange();
+    }
   }
 
   updateTransform() {
@@ -228,14 +191,14 @@ export class CanvasComponent {
 
   getCenter(): Vector {
     const { clientWidth, clientHeight, offsetLeft, offsetTop } = this.elRef.nativeElement;
-    return this.getImagePoint(new Vector(offsetLeft + (clientWidth / 2), offsetTop + (clientHeight / 2)));
+    return this.getCanvasPoint(new Vector(offsetLeft + (clientWidth / 2), offsetTop + (clientHeight / 2)));
   }
 
   getCanvasMousePosition(e: MouseEvent): Vector {
-    return this.getImagePoint(new Vector(e.clientX, e.clientY));
+    return this.getCanvasPoint(new Vector(e.clientX, e.clientY));
   }
 
-  getImagePoint(containerPoint: Vector) {
+  getCanvasPoint(containerPoint: Vector) {
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     const x = (containerPoint.x - rect.left) / this.scale;
     const y = (containerPoint.y - rect.top) / this.scale;
@@ -272,14 +235,13 @@ export class CanvasComponent {
   }
 
   emitPixelUnderMouse(e: MouseEvent) {
-    const position = this.getCanvasMousePosition(e);
-    if (position.x >= 0 && position.y >= 0 && position.x < this.canvas.width && position.y < this.canvas.height) {
-      const pixel = this.getPixel(position);
-      if (pixel) {
-        this.pixelOutput.emit(pixel)
+    if (this.onCanvasHover) {
+      const position = this.getCanvasMousePosition(e);
+      if (position.x >= 0 && position.y >= 0 && position.x < this.canvas.width && position.y < this.canvas.height) {
+        this.onCanvasHover(position);
+      } else {
+        this.onCanvasHover(null);
       }
-    } else {
-      this.pixelOutput.emit(null)
     }
   }
 

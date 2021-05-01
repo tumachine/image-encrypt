@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { Pixel } from '../canvas-image/canvas.component';
+import { Pixel } from '../canvas/canvas.component';
 
 @Component({
   selector: 'app-control-board',

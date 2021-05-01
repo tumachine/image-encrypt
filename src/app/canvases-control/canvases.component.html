@@ -1,20 +1,32 @@
-<div class="grid h-screen gap-1 bg-black" [ngClass]="gridClass">
-  <app-canvas
-    *ngFor="let canvas of canvases; let index = index"
+<div class="grid h-screen gap-1 bg-black grid-cols-2 grid-rows-4">
+  <app-canvas-wrapper
+    class="row-span-3"
+    #mainCanvas
     [image]="image"
-    [setViewState]="viewState"
-    (viewState)="updateViewState($event)"
-    (click)="canvasClick(index)"
+    [viewState]="viewState"
+    (viewStateChange)="updateViewState($event)"
+    [position]="position"
+    (positionHoverChange)="updatePosition($event)"
   >
-<!--    [setViewState]="index === selectedCanvas ? null : viewState"-->
-<!--    class="grid-span-1"-->
-<!--    [ngClass]="canvas.style"-->
-    <!--    (mouseenter)="mouseHover(index)"-->
-    <!--    (mouseleave)="mouseHover(null)"-->
-  </app-canvas>
+<!--        (click)="canvasClick(index)"-->
+  </app-canvas-wrapper>
+  <app-canvas-wrapper
+    class="row-span-3"
+    #secondaryCanvas
+    [image]="image"
+    [viewState]="viewState"
+    (viewStateChange)="updateViewState($event)"
+    [position]="position"
+    (positionHoverChange)="updatePosition($event)"
+  >
+  </app-canvas-wrapper>
+  <div class="bg-white">
+    <button (click)="operation()">ENCODE</button>
+    <button (click)="decodeData()">DECODE</button>
+  </div>
 <!--  <app-canvas class="col-span-2" (click)="canvasClick($event)" [imageSrc]="imageSrc" (viewState)="updateViewState($event)"></app-canvas>-->
 <!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
 <!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
   <!--  <app-control-board class="absolute m-4 p-10 border border-4" [pixel]="pixel"></app-control-board>-->
-  <button class="absolute" (click)="add()">RIGHT</button>
+<!--  <button class="absolute left-4 bottom-4" (click)="change()">CHANGE</button>-->
 </div>
