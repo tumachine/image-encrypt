@@ -20,7 +20,19 @@
     (positionHoverChange)="updatePosition($event)"
   >
   </app-canvas-wrapper>
-  <div class="bg-white">
+  <div class="bg-white" [formGroup]="formGroup">
+    <div>
+      <input formControlName="red" type="range" id="red" min="0" max="8">
+      <label for="red">R</label>
+    </div>
+    <div>
+      <input formControlName="green" type="range" id="green" min="0" max="8">
+      <label for="green">G</label>
+    </div>
+    <div>
+      <input formControlName="blue" type="range" id="blue" min="0" max="8">
+      <label for="blue">B</label>
+    </div>
     <button (click)="operation()">ENCODE</button>
     <button (click)="decodeData()">DECODE</button>
   </div>

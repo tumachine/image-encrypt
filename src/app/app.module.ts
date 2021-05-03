@@ -6,6 +6,7 @@ import { CanvasComponent } from './canvas/canvas.component';
 import { ControlBoardComponent } from './control-board/control-board.component';
 import { CanvasesComponent } from './canvases-control/canvases.component';
 import { CanvasWrapperComponent } from './canvas-wrapper/canvas-wrapper.component';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -16,7 +17,8 @@ import { CanvasWrapperComponent } from './canvas-wrapper/canvas-wrapper.componen
     CanvasWrapperComponent
   ],
   imports: [
-    BrowserModule
+    BrowserModule,
+    ReactiveFormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
