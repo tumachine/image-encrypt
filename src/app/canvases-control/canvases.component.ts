@@ -5,7 +5,6 @@ import { shake } from '../text';
 import { FormBuilder, FormGroup } from '@angular/forms';
 
 interface DataInfo {
-  infoLengthInBits: number;
   lengthInBytes: number;
   r: number;
   g: number;
@@ -40,11 +39,6 @@ export class CanvasesComponent implements OnInit {
   viewState!: CanvasViewState;
   position!: Vector | null;
 
-  // must be divisible by 6
-  // 32 binary length of data
-  // r, g, b - 4 for each = 12
-  // 4 startingIndex
-  // possibly add: name, type, r, g, b
   metadataBitLength = 36;
 
   readonly formGroup = this.fb.group({
@@ -99,24 +93,38 @@ export class CanvasesComponent implements OnInit {
   }
 
   operation() {
-    const text = 'Hello my name is Tumen';
-    const data = new Blob([text], { type: 'text/plain' });
-    data.arrayBuffer().then(buffer => {
-      this.encodeData(buffer);
-    })
+    const text = 'Harry Potter\nand the Goblet of';
+    this.encodeIntoImage(shake)
+  }
+
+  convertDataToBuffer(data: any, type: string = 'text/plain'): Promise<ArrayBuffer> {
+    const blob = new Blob([data], { type });
+    return blob.arrayBuffer();
+  }
+
+  async encodeMetadata(meta: DataInfo) {
+    const buffer = await this.convertDataToBuffer(JSON.stringify(meta));
+    let binaryString = this.convertToBinaryString(buffer);
+    const binaryStringOfMetadataLength = binaryString.length.toString(2).padStart(this.metadataBitLength, '0');
+    binaryString = binaryStringOfMetadataLength + binaryString;
+    return this.splitBinaryString(binaryString, [2, 2, 2, 0]);
+  }
+
+  async encodeData(data: any, meta: DataInfo) {
+    const buffer = await this.convertDataToBuffer(data);
+    let binaryString = this.convertToBinaryString(buffer);
+    meta.lengthInBytes = binaryString.length;
+    return this.splitBinaryString(binaryString, [meta.r, meta.g, meta.b, 0]);
   }
 
   splitBinaryString(binaryString: string, splitOrder: number[]): string[] {
     const splitArr: string[] = [];
-    // save metadata
-    for (let i = 0; i < this.metadataBitLength; i += 2) {
-      splitArr.push(binaryString.substr(i, 2));
-    }
-
     let counter = 0;
     let add = 0;
-    for (let i = this.metadataBitLength; i < binaryString.length; i += add) {
+    let addSum = 0;
+    for (let i = 0; i < binaryString.length; i += add) {
       add = splitOrder[counter]
+      addSum += add;
       const binaryPart = binaryString.substr(i, add);
       splitArr.push(binaryPart);
 
@@ -125,106 +133,87 @@ export class CanvasesComponent implements OnInit {
         counter = 0;
       }
     }
+
+    if (splitArr.length % 4 !== 0) {
+      const addEmpty = Math.ceil(splitArr.length / 4) * 4 - splitArr.length;
+      for (let i = 0; i < addEmpty; i++) {
+        splitArr.push('');
+      }
+    }
+
     return splitArr;
   }
 
-
-
   convertToBinaryString(arrayBuffer: ArrayBuffer): string {
-    const bufferArray = new Uint8Array(arrayBuffer);
-    // save metadata
+    const uInt8Array = new Uint8ClampedArray(arrayBuffer);
     let binaryString = '';
-    // length
-    binaryString += bufferArray.byteLength.toString(2).padStart(36, '0');
-    // r
-    // binaryString += bufferArray.byteLength.toString(2).padStart(4, '0');
-    // // g
-    // binaryString += bufferArray.byteLength.toString(2).padStart(4, '0');
-    // // b
-    // binaryString += bufferArray.byteLength.toString(2).padStart(4, '0');
-    // // start
-    // binaryString += bufferArray.byteLength.toString(2).padStart(4, '0');
-    for (let i = 0; i < bufferArray.byteLength; i++) {
-      binaryString += bufferArray[i].toString(2).padStart(8, '0');
+    for (let i = 0; i < uInt8Array.byteLength; i++) {
+      binaryString += uInt8Array[i].toString(2).padStart(8, '0');
     }
     return binaryString;
   }
 
-  convertDataInfoToBinaryString(dataInfo: DataInfo): string {
-    // order is important
-    const { lengthInBytes, infoLengthInBits, r, g, b } = dataInfo;
-    let binaryString = '';
-    binaryString += infoLengthInBits.toString(2).padStart(4, '0')
-    binaryString += lengthInBytes.toString(2).padStart(32, '0')
-    binaryString += r.toString(2).padStart(4, '0')
-    binaryString += g.toString(2).padStart(4, '0')
-    binaryString += b.toString(2).padStart(4, '0')
-    return binaryString;
-  }
+  async encodeIntoImage(data: any) {
+    const meta: DataInfo = {
+      lengthInBytes: 0,
+      r: 4,
+      g: 4,
+      b: 4
+    }
 
-  encodeData(data: ArrayBuffer, splitOrder: number[] = [2, 0, 4]) {
-    const binaryString = this.convertToBinaryString(data);
-    const splitArr = this.splitBinaryString(binaryString, splitOrder);
+    const encodedData = await this.encodeData(data, meta);
+    const encodedMetadata = await this.encodeMetadata(meta);
+
+    const splitArr = [...encodedMetadata, ...encodedData];
 
     const imageData = this.mainCanvas.getImageData();
     if (imageData) {
-      for (let i = 0; i < splitArr.length; i++) {
-        const imageIndex = Math.floor(i / 3) * 4 + i % 3;
-        imageData.data[imageIndex] = this.encodeByte(imageData.data[imageIndex], splitArr[i]);
+      for (let i = 0; i < splitArr.length; i += 4) {
+        imageData.data[i] = this.encodeByte(imageData.data[i], splitArr[i]);
+        imageData.data[i + 1] = this.encodeByte(imageData.data[i + 1], splitArr[i + 1]);
+        imageData.data[i + 2] = this.encodeByte(imageData.data[i + 2], splitArr[i + 2]);
       }
 
       this.secondaryCanvas.putImageData(imageData);
     }
   }
 
-  decodeData(splitOrder: number[] = [2, 0, 4]) {
+
+  async decodeData() {
     const imageData = this.secondaryCanvas.getImageData();
     if (imageData) {
       const metadataEndIndex = this.metadataBitLength / 6 * 4;
 
-      const metadataBinaryString = this.extractBinaryStringRange(imageData.data, 0, metadataEndIndex, [2, 2, 2]);
+      let metadataLengthInBytesString = this.extractBinaryStringRange(imageData.data, 0, metadataEndIndex, [2, 2, 2, 0]);
 
-      const lengthInBytes = parseInt(metadataBinaryString, 2);
-      console.log(lengthInBytes)
-      const dataInfo: DataInfo = {
-        infoLengthInBits: metadataEndIndex,
-        lengthInBytes,
-        r: splitOrder[0],
-        g: splitOrder[1],
-        b: splitOrder[2],
+      const metadataLengthInBytes = parseInt(metadataLengthInBytesString, 2);
+      const metadataLength = metadataLengthInBytes / 6 * 4;
+
+      const metadataBinaryEndIndex = metadataLength + metadataEndIndex;
+      let metadataBinaryString = this.extractBinaryStringRange(imageData.data, metadataEndIndex, metadataBinaryEndIndex, [2, 2, 2, 0]);
+      if (metadataBinaryString.length !== metadataLengthInBytes) {
+        metadataBinaryString = metadataBinaryString.slice(0, metadataLengthInBytes);
       }
-      const binaryString = this.extractBinaryStringData(imageData.data, dataInfo);
+      const decodedMetadataBuffer = this.convertBinaryStringToBuffer(metadataBinaryString);
+      const metadataBlob = new Blob([decodedMetadataBuffer]);
+      const metadataText = await metadataBlob.text();
+      const decodedMetadata: DataInfo = JSON.parse(metadataText);
 
-      // const approximateDataEnd = lengthInBinary / splitOrder.reduce((prev, curr) => prev + curr, 0) * 4 + metadataEndIndex;
-      //
-      // let binaryString = this.extractBinaryStringRange(imageData.data, metadataEndIndex, approximateDataEnd, splitOrder);
-      // if (binaryString.length !== lengthInBinary) {
-      //   binaryString = binaryString.slice(0, lengthInBinary);
-      // }
-      // console.log('binary OUT', binaryString)
+      // decode data
+      const dataStart = Math.ceil(metadataBinaryEndIndex / 4) * 4;
+      const splitOrder = [decodedMetadata.r, decodedMetadata.g, decodedMetadata.b, 0];
+      const bitsPerPixel = decodedMetadata.r + decodedMetadata.g + decodedMetadata.b;
+      const approximateDataEnd = decodedMetadata.lengthInBytes / bitsPerPixel * 4 + dataStart;
+
+      let binaryString = this.extractBinaryStringRange(imageData.data, dataStart, approximateDataEnd, splitOrder);
+      if (binaryString.length !== decodedMetadata.lengthInBytes) {
+        binaryString = binaryString.slice(0, decodedMetadata.lengthInBytes);
+      }
 
       const decodedBuffer = this.convertBinaryStringToBuffer(binaryString);
       const blob = new Blob([decodedBuffer])
       blob.text().then(data => console.log(data));
     }
-  }
-
-  extractBinaryStringInfo(imageData: Uint8ClampedArray) {
-
-  }
-
-  extractBinaryStringData(imageData: Uint8ClampedArray, dataInfo: DataInfo) {
-    const { r, g, b, infoLengthInBits, lengthInBytes } = dataInfo;
-
-    const lengthInBits = lengthInBytes * 8;
-
-    const approximateDataEnd = infoLengthInBits + lengthInBits / (r + g + b) * 4;
-
-    let binaryString = this.extractBinaryStringRange(imageData, infoLengthInBits, approximateDataEnd, [r, g, b]);
-    if (binaryString.length !== lengthInBits) {
-      binaryString = binaryString.slice(0, lengthInBits);
-    }
-    return binaryString;
   }
 
   extractBinaryStringRange(imageData: Uint8ClampedArray, start: number, end: number, splitOrder: number[]) {
@@ -247,6 +236,10 @@ export class CanvasesComponent implements OnInit {
   }
 
   encodeByte(value: number, insert: string) {
+    // if (insert?.length === undefined) {
+    if (insert === undefined) {
+      return 0;
+    }
     return value >> insert.length << insert.length | parseInt(insert, 2);
   }
 
