@@ -4,13 +4,6 @@ import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.compone
 import { shake } from '../text';
 import { FormBuilder, FormGroup } from '@angular/forms';
 
-interface DataInfo {
-  lengthInBytes: number;
-  r: number;
-  g: number;
-  b: number;
-}
-
 @Component({
   selector: 'app-canvases',
   templateUrl: './canvases.component.html',
@@ -93,7 +86,7 @@ export class CanvasesComponent implements OnInit {
   }
 
   operation() {
-    this.encodeIntoImage(shake)
+    this.encodeIntoImage('Hello my name is Tumen')
   }
 
   convertDataToBuffer(data: any, type: string = 'text/plain'): Promise<ArrayBuffer> {
