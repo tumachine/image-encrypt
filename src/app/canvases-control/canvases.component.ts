@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { CanvasViewState, Pixel, Vector } from '../canvas/canvas.component';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
-import { shake } from '../text';
+import { text } from '../../text';
 import { FormBuilder, FormGroup } from '@angular/forms';
 
 interface DataInfo {
@@ -39,7 +39,7 @@ export class CanvasesComponent implements OnInit {
   viewState!: CanvasViewState;
   position!: Vector | null;
 
-  metadataBitLength = 36;
+  metadataBitLength = 32;
 
   readonly formGroup = this.fb.group({
     red: 2,
@@ -50,7 +50,7 @@ export class CanvasesComponent implements OnInit {
   constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder) {}
 
   async ngOnInit() {
-    const src = '../assets/images/image.jpg';
+    const src = '../assets/images/cat.jpeg';
     this.image = await this.getImage(src);
     const ratio = this.image.width / this.image.height;
     this.cdRef.detectChanges();
@@ -93,8 +93,7 @@ export class CanvasesComponent implements OnInit {
   }
 
   operation() {
-    const text = 'Harry Potter\nand the Goblet of';
-    this.encodeIntoImage(shake)
+    this.encodeIntoImage('HARRY POTter and the Goblet of fire')
   }
 
   convertDataToBuffer(data: any, type: string = 'text/plain'): Promise<ArrayBuffer> {
@@ -182,38 +181,62 @@ export class CanvasesComponent implements OnInit {
   async decodeData() {
     const imageData = this.secondaryCanvas.getImageData();
     if (imageData) {
-      const metadataEndIndex = this.metadataBitLength / 6 * 4;
+      const decodedLengthOfMetadata = this.decodePixelsRange(imageData.data, 0, this.metadataBitLength, [2, 2, 2]);
 
-      let metadataLengthInBytesString = this.extractBinaryStringRange(imageData.data, 0, metadataEndIndex, [2, 2, 2, 0]);
+      // const pixelEndOfMetadataLength = this.getPixelsRange(this.metadataBitLength, [2, 2, 2]);
+      // const metadataLengthInBytesString = this.extractBinaryStringRange(imageData.data, 0, pixelEndOfMetadataLength, [2, 2, 2, 0]);
+      // const adjustedMetadataLengthInBytesString = this.adjustBinaryString(metadataLengthInBytesString, this.metadataBitLength);
 
-      const metadataLengthInBytes = parseInt(metadataLengthInBytesString, 2);
-      const metadataLength = metadataLengthInBytes / 6 * 4;
+      // const metadataLengthInBytes = parseInt(adjustedMetadataLengthInBytesString, 2);
+      // const metadataLengthInPixels = this.getPixelsRange(metadataLengthInBytes, [2, 2, 2]);
+      // console.log(metadataLengthInBytes)
+      const lengthOfMetadataInBytes = parseInt(decodedLengthOfMetadata.binaryString, 2);
+      // const metadataLengthInPixels = this.getPixelsRange(length, [2, 2, 2]);
+      console.log(lengthOfMetadataInBytes)
+      console.log(decodedLengthOfMetadata.nextPixelIndex)
 
-      const metadataBinaryEndIndex = metadataLength + metadataEndIndex;
-      let metadataBinaryString = this.extractBinaryStringRange(imageData.data, metadataEndIndex, metadataBinaryEndIndex, [2, 2, 2, 0]);
-      if (metadataBinaryString.length !== metadataLengthInBytes) {
-        metadataBinaryString = metadataBinaryString.slice(0, metadataLengthInBytes);
-      }
-      const decodedMetadataBuffer = this.convertBinaryStringToBuffer(metadataBinaryString);
+      const decodedMetadata = this.decodePixelsRange(imageData.data, decodedLengthOfMetadata.nextPixelIndex, lengthOfMetadataInBytes, [2, 2, 2]);
+
+      // let metadataBinaryString = this.extractBinaryStringRange(imageData.data, pixelEndOfMetadataLength + 1, pixelEndOfMetadataLength + 1 + pixelEndOfMetadataLength, metadataLengthInPixels, [2, 2, 2, 0]);
+      // if (metadataBinaryString.length !== metadataLengthInBytes) {
+      //   metadataBinaryString = metadataBinaryString.slice(0, metadataLengthInBytes);
+      // }
+      console.log(decodedMetadata.binaryString)
+      const decodedMetadataBuffer = this.convertBinaryStringToBuffer(decodedMetadata.binaryString);
       const metadataBlob = new Blob([decodedMetadataBuffer]);
       const metadataText = await metadataBlob.text();
-      const decodedMetadata: DataInfo = JSON.parse(metadataText);
+      const dataInfo: DataInfo = JSON.parse(metadataText);
+      console.log(decodedMetadata);
 
       // decode data
-      const dataStart = Math.ceil(metadataBinaryEndIndex / 4) * 4;
-      const splitOrder = [decodedMetadata.r, decodedMetadata.g, decodedMetadata.b, 0];
-      const bitsPerPixel = decodedMetadata.r + decodedMetadata.g + decodedMetadata.b;
-      const approximateDataEnd = decodedMetadata.lengthInBytes / bitsPerPixel * 4 + dataStart;
-
-      let binaryString = this.extractBinaryStringRange(imageData.data, dataStart, approximateDataEnd, splitOrder);
-      if (binaryString.length !== decodedMetadata.lengthInBytes) {
-        binaryString = binaryString.slice(0, decodedMetadata.lengthInBytes);
-      }
-
-      const decodedBuffer = this.convertBinaryStringToBuffer(binaryString);
-      const blob = new Blob([decodedBuffer])
-      blob.text().then(data => console.log(data));
+      // const dataStart = Math.ceil(metadataBinaryEndIndex / 4) * 4;
+      // const splitOrder = [decodedMetadata.r, decodedMetadata.g, decodedMetadata.b, 0];
+      // const bitsPerPixel = decodedMetadata.r + decodedMetadata.g + decodedMetadata.b;
+      // const approximateDataEnd = decodedMetadata.lengthInBytes / bitsPerPixel * 4 + dataStart;
+      //
+      // let binaryString = this.extractBinaryStringRange(imageData.data, dataStart, approximateDataEnd, splitOrder);
+      // if (binaryString.length !== decodedMetadata.lengthInBytes) {
+      //   binaryString = binaryString.slice(0, decodedMetadata.lengthInBytes);
+      // }
+      //
+      // const decodedBuffer = this.convertBinaryStringToBuffer(binaryString);
+      // const blob = new Blob([decodedBuffer])
+      // blob.text().then(data => console.log(data));
     }
+  }
+
+  decodePixelsRange(imageData: Uint8ClampedArray, start: number, lengthInBits: number, splitOrder: number[]): { binaryString: string, nextPixelIndex: number } {
+    const pixelsRange = this.getPixelsRange(lengthInBits, splitOrder);
+    const lastIndex = start + pixelsRange * 4;
+    const rawPixelsData = this.extractBinaryStringRange(imageData, start, lastIndex, splitOrder);
+    const binaryString = this.adjustBinaryString(rawPixelsData, lengthInBits);
+    console.log(binaryString);
+    return { binaryString, nextPixelIndex: lastIndex - 2 };
+  }
+
+  getPixelsRange(lengthInBits: number, splitOrder: number[]): number {
+    const sum = splitOrder.reduce((prev, curr) => prev + curr);
+    return Math.ceil(lengthInBits / sum);
   }
 
   extractBinaryStringRange(imageData: Uint8ClampedArray, start: number, end: number, splitOrder: number[]) {
@@ -222,6 +245,13 @@ export class CanvasesComponent implements OnInit {
       binaryString += this.decodeByte(imageData[i], splitOrder[0]);
       binaryString += this.decodeByte(imageData[i + 1], splitOrder[1]);
       binaryString += this.decodeByte(imageData[i + 2], splitOrder[2]);
+    }
+    return binaryString;
+  }
+
+  adjustBinaryString(binaryString: string, length: number) {
+    if (binaryString.length !== length) {
+      return binaryString.slice(0, length);
     }
     return binaryString;
   }
