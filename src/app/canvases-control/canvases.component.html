@@ -20,7 +20,7 @@
     (positionHoverChange)="updatePosition($event)"
   >
   </app-canvas-wrapper>
-  <div class="bg-white" [formGroup]="formGroup">
+  <div class="bg-white col-span-2" [formGroup]="formGroup">
     <div>
       <input formControlName="red" type="range" id="red" min="0" max="8">
       <label for="red">R</label>
@@ -33,8 +33,9 @@
       <input formControlName="blue" type="range" id="blue" min="0" max="8">
       <label for="blue">B</label>
     </div>
-    <button (click)="operation()">ENCODE</button>
+    <button (click)="encodeIntoImage()">ENCODE</button>
     <button (click)="decodeData()">DECODE</button>
+    <app-file-upload></app-file-upload>
   </div>
 <!--  <app-canvas class="col-span-2" (click)="canvasClick($event)" [imageSrc]="imageSrc" (viewState)="updateViewState($event)"></app-canvas>-->
 <!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
