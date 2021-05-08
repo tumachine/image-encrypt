@@ -19,6 +19,7 @@ export class DragAndDropDirective {
   onDragLeave(e: DragEvent) {
     e.preventDefault();
     e.stopPropagation();
+    console.log('DARG LEAVE')
     this.fileOver = false;
   }
 

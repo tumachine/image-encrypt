@@ -1,22 +1,31 @@
-<div class="container" appDragAndDrop (fileDropped)="onFileDropped($event)">
-  <input type="file" #fileDropRef id="fileDropRef" multiple (change)="fileBrowseHandler($event.target.files)" />
-  <img src="assets/img/dnd/ic-upload-file.svg" alt="">
-  <h3>Drag and drop file here</h3>
-  <h3>or</h3>
-  <label for="fileDropRef">Browse for file</label>
-</div>
-<div class="files-list">
-  <div class="single-file" *ngFor="let file of files; let i = index">
-    <img src="assets/img/dnd/ic-file.svg" width="45px" alt="file">
-    <div class="info">
-      <h4 class="name">
-        {{ file?.name }}
-      </h4>
-      <p class="size">
-        {{ formatBytes(file?.size) }}
-      </p>
-      <app-progress [progress]="file?.progress"></app-progress>
-    </div>
-    <img src="assets/img/dnd/ic-delete-file.svg" class="delete" width="20px" alt="file" (click)="deleteFile(i)">
+<div
+  class="h-full py-4 m-4 relative flex items-center justify-evenly border-2 border-gray-400 border-dashed"
+  appDragAndDrop
+  (fileDropped)="fileDropped($event)"
+>
+  <div class="w-64 h-36 flex flex-col items-center justify-evenly">
+    <div class="hello font-semibold">Drag and drop file(s) here</div>
+    <div>or</div>
+    <input class="hidden" type="file" id="fileDropRef" multiple (change)="fileBrowse($event)" />
+    <label
+      class="focus:outline-none text-white text-sm py-2.5 px-5 rounded-md bg-blue-500 hover:bg-blue-600 hover:shadow-lg cursor-pointer"
+      for="fileDropRef"
+    >
+      Browse for file(s)
+    </label>
   </div>
 </div>
+<!--<div class="">-->
+<!--  <div class="" *ngFor="let fileWrapper of files; let i = index">-->
+<!--    <div class="">-->
+<!--      <div class="">-->
+<!--        {{ fileWrapper.file?.name }}-->
+<!--      </div>-->
+<!--      <img class="max-w-15 max-h-10" [src]="fileWrapper.objUrl" [alt]="fileWrapper.file?.name">-->
+<!--      <p class="">-->
+<!--        {{ fileWrapper.humanReadableSize }}-->
+<!--      </p>-->
+<!--    </div>-->
+<!--    <button class="" (click)="deleteFile(i)">DELETE</button>-->
+<!--  </div>-->
+<!--</div>-->
