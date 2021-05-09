@@ -4,7 +4,7 @@ export interface FileMeta {
 }
 
 export interface ImageMetaInfo {
-  lengthInBytes: number;
+  files: FileMeta[];
   r: number;
   g: number;
   b: number;
@@ -38,11 +38,11 @@ export class ImageEncrypt {
     let counter = 0;
 
     for (let i = start; i < end; i += 4) {
-      imageData[i] = this.encodeByte(imageData[i], binaryString.substr(counter, splitOrder[0]));
+      imageData[i] = this.encodeByte(imageData[i], binaryString.substr(counter, splitOrder[0]).padEnd(splitOrder[0], '0'));
       counter += splitOrder[0];
-      imageData[i + 1] = this.encodeByte(imageData[i + 1], binaryString.substr(counter, splitOrder[1]));
+      imageData[i + 1] = this.encodeByte(imageData[i + 1], binaryString.substr(counter, splitOrder[1]).padEnd(splitOrder[1], '0'));
       counter += splitOrder[1]
-      imageData[i + 2] = this.encodeByte(imageData[i + 2], binaryString.substr(counter, splitOrder[2]));
+      imageData[i + 2] = this.encodeByte(imageData[i + 2], binaryString.substr(counter, splitOrder[2]).padEnd(splitOrder[2], '0'));
       counter += splitOrder[2];
     }
   }

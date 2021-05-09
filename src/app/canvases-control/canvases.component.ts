@@ -3,7 +3,7 @@ import { CanvasViewState, Color, Vector } from '../canvas/canvas.component';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
 import { shake } from '../text';
 import { FormBuilder } from '@angular/forms';
-import { ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
+import { FileMeta, ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
 import { formatBytes, invertColor } from '../utils';
 import { DomSanitizer } from '@angular/platform-browser';
 
@@ -80,13 +80,10 @@ export class CanvasesComponent implements OnInit {
     const src = '../assets/images/image.jpg';
     this.image = await this.getImage(src);
 
-    const buffer = await ImageEncrypt.convertDataToBuffer(shake);
+    // const buffer = await ImageEncrypt.convertDataToBuffer(shake);
+    const buffer = await ImageEncrypt.convertDataToBuffer( shake);
     const file = new File([buffer], 'file.txt');
     this.uploadFiles.push({ file, type: FileType.Text, humanReadableSize: formatBytes(file.size), objUrl: null });
-    // type: FileType,
-    //   humanReadableSize: string,
-    //   file: File,
-    //   objUrl: null | any,
   }
 
   files(files: File[]): void {
@@ -170,7 +167,7 @@ export class CanvasesComponent implements OnInit {
   }
 
   encodeIntoImage() {
-    const meta: ImageMetaInfo = { lengthInBytes: 0, ...this.formGroup.value }
+    const meta: ImageMetaInfo = { ...this.formGroup.value, files: [] }
     this.encodeData(shake, meta);
   }
 
@@ -178,11 +175,20 @@ export class CanvasesComponent implements OnInit {
     const imageData = this.mainCanvas.getImageData();
 
     if (imageData) {
-      console.log(formatBytes((imageData.width * imageData.height) * 9 / 8));
-      const dataBuffer = await ImageEncrypt.convertDataToBuffer(data);
-      console.log(formatBytes(dataBuffer.byteLength))
-      const dataBinaryString = ImageEncrypt.convertToBinaryString(dataBuffer);
-      meta.lengthInBytes = dataBinaryString.length;
+      // console.log(formatBytes((imageData.width * imageData.height) * 9 / 8));
+      // console.log(formatBytes(dataBuffer.byteLength))
+      // const dataBuffer = await ImageEncrypt.convertDataToBuffer(data);
+      const filesInfo: FileMeta[] = [];
+      const fileBinaryStrings: string[] = [];
+      for (let i = 0; i < this.uploadFiles.length; i++) {
+        const buffer = await this.uploadFiles[i].file.arrayBuffer();
+        const fileBinaryString = ImageEncrypt.convertToBinaryString(buffer);
+
+        filesInfo.push({ size: fileBinaryString.length, name: this.uploadFiles[i].file.name })
+        fileBinaryStrings.push(fileBinaryString);
+      }
+
+      meta.files = filesInfo;
 
       const metadataBuffer = await ImageEncrypt.convertDataToBuffer(JSON.stringify(meta));
       const metadataBinaryString = ImageEncrypt.convertToBinaryString(metadataBuffer);
@@ -191,7 +197,11 @@ export class CanvasesComponent implements OnInit {
       const endImageIndexOfMetadataLength = await ImageEncrypt.encodeBinaryString(imageData, 0, [2, 2, 2], binaryStringOfMetadataLength);
       const endImageIndexOfMetadata = await ImageEncrypt.encodeBinaryString(imageData, endImageIndexOfMetadataLength, [2, 2, 2], metadataBinaryString);
 
-      await ImageEncrypt.encodeBinaryString(imageData, endImageIndexOfMetadata, [meta.r, meta.g, meta.b], dataBinaryString);
+      let startOfData = endImageIndexOfMetadata;
+
+      for (let i = 0; i < filesInfo.length; i++) {
+        startOfData = await ImageEncrypt.encodeBinaryString(imageData, startOfData, [meta.r, meta.g, meta.b], fileBinaryStrings[i]);
+      }
 
       this.secondaryCanvas.putImageData(imageData);
     }
@@ -209,11 +219,16 @@ export class CanvasesComponent implements OnInit {
       const metadataText = await metadataBlob.text();
       const dataInfo: ImageMetaInfo = JSON.parse(metadataText);
 
-      const decodedData = ImageEncrypt.decodePixelsRange(imageData.data, decodedMetadata.nextPixelIndex, dataInfo.lengthInBytes, [dataInfo.r, dataInfo.g, dataInfo.b]);
-      const decodedBuffer = ImageEncrypt.convertBinaryStringToBuffer(decodedData.binaryString);
-      const blob = new Blob([decodedBuffer])
-      const decodedDataText = await blob.text();
-      console.log(decodedDataText);
+      let decodedData = decodedMetadata;
+
+      for (let i = 0; i < dataInfo.files.length; i++) {
+        decodedData = ImageEncrypt.decodePixelsRange(imageData.data, decodedData.nextPixelIndex, dataInfo.files[i].size, [dataInfo.r, dataInfo.g, dataInfo.b]);
+        const decodedBuffer = ImageEncrypt.convertBinaryStringToBuffer(decodedData.binaryString);
+        const blob = new Blob([decodedBuffer])
+        const file = new File([decodedBuffer], dataInfo.files[i].name)
+        const decodedDataText = await file.text();
+        console.log(decodedDataText);
+      }
     }
   }
 }

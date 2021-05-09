@@ -80,6 +80,12 @@
         >
           ENCODE
         </button>
+        <button
+          (click)="decodeData()"
+          class="focus:outline-none w-full h-16 text-white text-xl py-2.5 px-5 rounded bg-blue-700 hover:bg-green-600 hover:shadow-lg"
+        >
+          DECODE
+        </button>
       </div>
       <div *ngIf="position" class="flex border justify-end p-2 text-lg">
         <div class="mr-3">X: <span class="font-semibold">{{ position.x }}</span></div>
