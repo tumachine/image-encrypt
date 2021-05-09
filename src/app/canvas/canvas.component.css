@@ -2,3 +2,7 @@
   transform-origin: 0 0;
   image-rendering: pixelated;
 }
+
+:host {
+  background-color: #383838;
+}

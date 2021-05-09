@@ -9,7 +9,8 @@ import { DragAndDropDirective } from './drag-and-drop.directive';
     DragAndDropDirective
   ],
   exports: [
-    FileUploadComponent
+    FileUploadComponent,
+    DragAndDropDirective
   ],
   imports: [
     CommonModule

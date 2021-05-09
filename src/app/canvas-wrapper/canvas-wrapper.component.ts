@@ -45,22 +45,6 @@ export class CanvasWrapperComponent implements OnInit {
     }
   }
 
-  @Input()
-  set position(position: Vector | null) {
-    if (position) {
-      const pixel = this.canvasComponent.getPixel(position);
-      if (pixel) {
-        const binary = {
-          r: pixel.color.r.toString(2).padStart(8, '0'),
-          g: pixel.color.g.toString(2).padStart(8, '0'),
-          b: pixel.color.b.toString(2).padStart(8, '0'),
-          a: pixel.color.a.toString(2).padStart(8, '0'),
-        }
-        this.pixel = { ...pixel, binary };
-      }
-    }
-  }
-
   @Output()
   viewStateChange = new EventEmitter<CanvasViewState>();
 
@@ -78,12 +62,6 @@ export class CanvasWrapperComponent implements OnInit {
     this.canvasComponent.onCanvasHover = (position) => {
       this.positionHoverChange.emit(position);
     }
-  }
-
-  takeBits(num: number, from: number, to: number) {
-    const froma = num >> from;
-    const take = from - to;
-    // return froma & arr[take];
   }
 
   getImageData(): ImageData | undefined {

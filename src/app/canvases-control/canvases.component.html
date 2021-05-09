@@ -1,45 +1,159 @@
-<div class="grid h-screen gap-1 bg-black grid-cols-2 grid-rows-4">
-  <app-canvas-wrapper
-    class="row-span-3"
-    #mainCanvas
-    [image]="image"
-    [viewState]="viewState"
-    (viewStateChange)="updateViewState($event)"
-    [position]="position"
-    (positionHoverChange)="updatePosition($event)"
-  >
-<!--        (click)="canvasClick(index)"-->
-  </app-canvas-wrapper>
-  <app-canvas-wrapper
-    class="row-span-3"
-    #secondaryCanvas
-    [image]="image"
-    [viewState]="viewState"
-    (viewStateChange)="updateViewState($event)"
-    [position]="position"
-    (positionHoverChange)="updatePosition($event)"
-  >
-  </app-canvas-wrapper>
-  <div class="bg-white col-span-2" [formGroup]="formGroup">
-    <div>
-      <input formControlName="red" type="range" id="red" min="0" max="8">
-      <label for="red">R</label>
+<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2">
+  <div class="interface m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
+    <div class="flex flex-col">
+      <div class="flex flex-col items-center p-4">
+        <ng-template
+          [ngTemplateOutlet]="rangeBitsTmplRef"
+          [ngTemplateOutletContext]="{ description: 'red', className: 'red', formControl: formGroup.get('r') }"
+        ></ng-template>
+        <ng-template
+          [ngTemplateOutlet]="rangeBitsTmplRef"
+          [ngTemplateOutletContext]="{ description: 'green', className: 'green', formControl: formGroup.get('g') }"
+        ></ng-template>
+        <ng-template
+          [ngTemplateOutlet]="rangeBitsTmplRef"
+          [ngTemplateOutletContext]="{ description: 'blue', className: 'blue', formControl: formGroup.get('b') }"
+        ></ng-template>
+      </div>
+      <div *ngIf="pixelDifference" class="flex justify-center">
+        <ng-template
+          [ngTemplateOutlet]="pixelDifferenceTmplRef"
+          [ngTemplateOutletContext]="{
+            description: 'R',
+            difference: pixelDifference.difference.r,
+            original: pixelDifference.original.r,
+            encrypted: pixelDifference.encrypted.r
+          }"
+        ></ng-template>
+        <ng-template
+          [ngTemplateOutlet]="pixelDifferenceTmplRef"
+          [ngTemplateOutletContext]="{
+            description: 'G',
+            difference: pixelDifference.difference.g,
+            original: pixelDifference.original.g,
+            encrypted: pixelDifference.encrypted.g
+          }"
+        ></ng-template>
+        <ng-template
+          [ngTemplateOutlet]="pixelDifferenceTmplRef"
+          [ngTemplateOutletContext]="{
+            description: 'B',
+            difference: pixelDifference.difference.b,
+            original: pixelDifference.original.b,
+            encrypted: pixelDifference.encrypted.b
+          }"
+        ></ng-template>
+        <div class="flex mx-2 flex-col justify-between">
+          <div
+            class="w-32 h-12 rounded-md mt-8 flex justify-center items-center text-xl"
+            [style.background-color]="pixelDifference.original.color.toRGB()"
+            [style.color]="invertColor(pixelDifference.original.color)"
+          >
+            ORIGINAL
+          </div>
+          <div
+            class="w-32 h-12 rounded-md flex justify-center items-center text-xl"
+            [style.background-color]="pixelDifference.encrypted.color.toRGB()"
+            [style.color]="invertColor(pixelDifference.encrypted.color)"
+          >
+            ENCRYPTED
+          </div>
+        </div>
+      </div>
+      <div>
+        <app-file-upload (files)="files($event)"></app-file-upload>
+        <div class="rounded border flex justify-between p-2" *ngFor="let uploadFile of uploadFiles; let i = index">
+          <div class="flex">
+            <img class="max-w-15 max-h-10" [src]="uploadFile.objUrl" [alt]="uploadFile.file?.name">
+            <div class="">{{ uploadFile.file.name }}</div>
+            <p class="">{{ uploadFile.humanReadableSize }}</p>
+          </div>
+          <button class="" (click)="deleteFile(i)">DELETE</button>
+        </div>
+      </div>
     </div>
-    <div>
-      <input formControlName="green" type="range" id="green" min="0" max="8">
-      <label for="green">G</label>
+    <div class="flex flex-col">
+      <div class="p-1">
+        <button
+          (click)="encodeIntoImage()"
+          class="focus:outline-none w-full h-16 text-white text-xl py-2.5 px-5 rounded bg-blue-700 hover:bg-blue-600 hover:shadow-lg"
+        >
+          ENCODE
+        </button>
+      </div>
+      <div *ngIf="position" class="flex border justify-end p-2 text-lg">
+        <div class="mr-3">X: <span class="font-semibold">{{ position.x }}</span></div>
+        <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
+      </div>
     </div>
-    <div>
-      <input formControlName="blue" type="range" id="blue" min="0" max="8">
-      <label for="blue">B</label>
-    </div>
-    <button (click)="encodeIntoImage()">ENCODE</button>
-    <button (click)="decodeData()">DECODE</button>
-    <app-file-upload></app-file-upload>
   </div>
-<!--  <app-canvas class="col-span-2" (click)="canvasClick($event)" [imageSrc]="imageSrc" (viewState)="updateViewState($event)"></app-canvas>-->
-<!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
-<!--  <app-canvas class="col-span-1" (click)="canvasClick($event)" [imageSrc]="imageSrc" [setViewState]="viewState"></app-canvas>-->
-  <!--  <app-control-board class="absolute m-4 p-10 border border-4" [pixel]="pixel"></app-control-board>-->
-<!--  <button class="absolute left-4 bottom-4" (click)="change()">CHANGE</button>-->
+
+  <div class="col-span-5 canvas">
+    <app-canvas-wrapper
+      appDragAndDrop
+      #mainCanvas
+      [image]="image"
+      [viewState]="viewState"
+      (viewStateChange)="updateViewState($event)"
+      (positionHoverChange)="updatePosition($event)"
+    >
+    </app-canvas-wrapper>
+  </div>
+  <div class="col-span-5 canvas">
+    <app-canvas-wrapper
+      #secondaryCanvas
+      [image]="image"
+      [viewState]="viewState"
+      (viewStateChange)="updateViewState($event)"
+      (positionHoverChange)="updatePosition($event)"
+    >
+    </app-canvas-wrapper>
+  </div>
 </div>
+
+<ng-template
+  #pixelDifferenceTmplRef
+  let-description="description"
+  let-original="original"
+  let-encrypted="encrypted"
+  let-difference="difference"
+>
+  <div class="flex mx-2 flex-col">
+    <div class="text-center text-2xl">{{ description }}</div>
+    <div
+      class="w-12 h-12 rounded-md flex justify-center items-center text-2xl"
+      [style.background-color]="original.toRGB()"
+      [style.color]="invertColor(original)"
+    >
+      {{ original.r + original.g + original.b }}
+    </div>
+    <div [ngClass]="{ 'green': difference > 0, 'red': difference < 0 }" class="text-xl">
+      {{ difference > 0 ? '+' : '' }}{{ difference }}
+    </div>
+    <div
+      class="w-12 h-12 flex justify-center items-center text-2xl"
+      [style.background-color]="encrypted.toRGB()"
+      [style.color]="invertColor(encrypted)"
+    >
+      {{ encrypted.r + encrypted.g + encrypted.b }}
+    </div>
+  </div>
+</ng-template>
+
+<ng-template
+  #rangeBitsTmplRef
+  let-description="description"
+  let-formControl="formControl"
+  let-className="className"
+>
+  <div class="w-3/5">
+    <div class="flex justify-between font-semibold relative top-1.5">
+      <label [for]="description" class="uppercase" [ngClass]="[description, className]">{{ description }}</label>
+      <div class="flex">
+        <div>0 - {{ rangeBits[formControl?.value] }}</div>
+        <div class="ml-5">{{ formControl?.value }} bits</div>
+      </div>
+    </div>
+    <input [formControl]="formControl" type="range" [id]="description" min="0" max="8">
+  </div>
+</ng-template>

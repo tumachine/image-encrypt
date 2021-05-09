@@ -1,10 +1,46 @@
 import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
-import { CanvasViewState, Pixel, Vector } from '../canvas/canvas.component';
+import { CanvasViewState, Color, Vector } from '../canvas/canvas.component';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
 import { shake } from '../text';
 import { FormBuilder } from '@angular/forms';
 import { ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
-import { formatBytes } from '../utils';
+import { formatBytes, invertColor } from '../utils';
+import { DomSanitizer } from '@angular/platform-browser';
+
+enum FileType {
+  Image,
+  Sound,
+  Document,
+  Text,
+  Any,
+}
+
+interface FileWrapper {
+  type: FileType,
+  humanReadableSize: string,
+  file: File,
+  objUrl: null | any,
+}
+
+interface PixelDifference {
+  original: {
+    r: Color;
+    g: Color;
+    b: Color;
+    color: Color;
+  };
+  encrypted: {
+    r: Color;
+    g: Color;
+    b: Color;
+    color: Color;
+  };
+  difference: {
+    r: number;
+    g: number;
+    b: number;
+  };
+}
 
 @Component({
   selector: 'app-canvases',
@@ -18,26 +54,48 @@ export class CanvasesComponent implements OnInit {
   @ViewChild('secondaryCanvas', { static: true })
   secondaryCanvas!: CanvasWrapperComponent;
 
-  pixel!: Pixel | null;
-
   image!: HTMLImageElement;
 
   viewState!: CanvasViewState;
-  position!: Vector | null;
 
   metadataBitLength = 32;
 
+  pixelDifference!: PixelDifference;
+
+  position!: Vector;
+
+  rangeBits = [0, 2, 4, 8, 16, 32, 64, 128, 255];
+
+  uploadFiles: FileWrapper[] = [];
+
   readonly formGroup = this.fb.group({
-    red: 2,
-    green: 2,
-    blue: 2,
+    r: 7,
+    g: 7,
+    b: 7,
   })
 
-  constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder) {}
+  constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder, private sanitizer: DomSanitizer) {}
 
   async ngOnInit() {
     const src = '../assets/images/image.jpg';
     this.image = await this.getImage(src);
+  }
+
+  files(files: File[]): void {
+    files.forEach(file => {
+      let type: FileType = FileType.Any;
+      let url: string | any = null;
+      if (file.type.match('image.*')) {
+        console.log('is image')
+        type = FileType.Image;
+        url = this.sanitizer.bypassSecurityTrustResourceUrl(URL.createObjectURL(file));
+      }
+      this.uploadFiles.push({ file, type, humanReadableSize: formatBytes(file.size), objUrl: url });
+    })
+  }
+
+  deleteFile(index: number) {
+    this.uploadFiles.splice(index, 1);
   }
 
   async getImage(src: string): Promise<HTMLImageElement> {
@@ -53,20 +111,50 @@ export class CanvasesComponent implements OnInit {
   }
 
   updatePosition(position: Vector | null) {
-    this.position = position;
+    if (position) {
+      const originalPixel = this.mainCanvas.canvasComponent.getPixel(position);
+      const encryptedPixel = this.secondaryCanvas.canvasComponent.getPixel(position);
+      if (originalPixel && encryptedPixel) {
+        this.position = new Vector(Math.floor(originalPixel.position.x), Math.floor(originalPixel.position.y));
+        this.pixelDifference = {
+          difference: {
+            r: encryptedPixel.color.r - originalPixel.color.r,
+            g: encryptedPixel.color.g - originalPixel.color.g,
+            b: encryptedPixel.color.b - originalPixel.color.b,
+          },
+          original: {
+            r: new Color(originalPixel.color.r, 0, 0),
+            g: new Color(0, originalPixel.color.g, 0),
+            b: new Color(0, 0, originalPixel.color.b),
+            color: originalPixel.color,
+          },
+          encrypted: {
+            r: new Color(encryptedPixel.color.r, 0, 0),
+            g: new Color(0, encryptedPixel.color.g, 0),
+            b: new Color(0, 0, encryptedPixel.color.b),
+            color: encryptedPixel.color,
+          },
+        }
+      }
+      // if (pixel) {
+      //   const binary = {
+      //     r: pixel.color.r.toString(2).padStart(8, '0'),
+      //     g: pixel.color.g.toString(2).padStart(8, '0'),
+      //     b: pixel.color.b.toString(2).padStart(8, '0'),
+      //     a: pixel.color.a.toString(2).padStart(8, '0'),
+      //   }
+      //   this.pixel = { ...pixel, binary };
+      // }
+      // this.position = new Vector(Math.floor(position.x), Math.floor(position.y));
+    }
   }
 
-  pixelUpdate(pixel: Pixel | null) {
-    this.pixel = pixel;
+  invertColor(color: Color) {
+    return invertColor(color.r, color.g, color.b);
   }
 
   encodeIntoImage() {
-    const meta: ImageMetaInfo = {
-      lengthInBytes: 0,
-      r: 3,
-      g: 3,
-      b: 3,
-    }
+    const meta: ImageMetaInfo = { lengthInBytes: 0, ...this.formGroup.value }
     this.encodeData(shake, meta);
   }
 
