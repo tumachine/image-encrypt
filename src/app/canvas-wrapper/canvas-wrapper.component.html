@@ -1,1 +1,9 @@
-<app-canvas></app-canvas>
+<app-canvas
+  *ngIf="enableFileDrop"
+  appDragAndDrop
+  (fileDropped)="fileDropped.emit($event)"
+>
+</app-canvas>
+
+<app-canvas *ngIf="!enableFileDrop"></app-canvas>
+

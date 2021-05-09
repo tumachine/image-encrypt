@@ -90,7 +90,8 @@
 
   <div class="col-span-5 canvas">
     <app-canvas-wrapper
-      appDragAndDrop
+      [enableFileDrop]="true"
+      (fileDropped)="updateImage($event)"
       #mainCanvas
       [image]="image"
       [viewState]="viewState"

@@ -1,4 +1,7 @@
-import { shake } from './text';
+export interface FileMeta {
+  size: number;
+  name: string;
+}
 
 export interface ImageMetaInfo {
   lengthInBytes: number;

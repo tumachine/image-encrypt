@@ -9,7 +9,7 @@ export class DragAndDropDirective {
   @Output() fileDropped = new EventEmitter<FileList>();
 
   @HostListener('dragover', ['$event'])
-  onDragOver(e: Event) {
+  onDragOver(e: DragEvent) {
     e.preventDefault();
     e.stopPropagation();
     this.fileOver = true;
@@ -19,7 +19,6 @@ export class DragAndDropDirective {
   onDragLeave(e: DragEvent) {
     e.preventDefault();
     e.stopPropagation();
-    console.log('DARG LEAVE')
     this.fileOver = false;
   }
 

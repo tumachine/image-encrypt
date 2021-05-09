@@ -79,6 +79,14 @@ export class CanvasesComponent implements OnInit {
   async ngOnInit() {
     const src = '../assets/images/image.jpg';
     this.image = await this.getImage(src);
+
+    const buffer = await ImageEncrypt.convertDataToBuffer(shake);
+    const file = new File([buffer], 'file.txt');
+    this.uploadFiles.push({ file, type: FileType.Text, humanReadableSize: formatBytes(file.size), objUrl: null });
+    // type: FileType,
+    //   humanReadableSize: string,
+    //   file: File,
+    //   objUrl: null | any,
   }
 
   files(files: File[]): void {
@@ -108,6 +116,14 @@ export class CanvasesComponent implements OnInit {
 
   updateViewState(viewState: CanvasViewState) {
     this.viewState = viewState;
+  }
+
+  async updateImage(files: FileList) {
+    const arrFiles = Array.from(files);
+    if (arrFiles.length === 1) {
+      const url = URL.createObjectURL(arrFiles[0]);
+      this.image = await this.getImage(url as any);
+    }
   }
 
   updatePosition(position: Vector | null) {

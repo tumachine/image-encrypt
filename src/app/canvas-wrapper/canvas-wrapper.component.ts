@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { CanvasComponent, CanvasViewState, Pixel, Vector } from '../canvas/canvas.component';
 
 interface PixelWithBinaryColors extends Pixel {
@@ -13,11 +13,14 @@ interface PixelWithBinaryColors extends Pixel {
 @Component({
   selector: 'app-canvas-wrapper',
   templateUrl: './canvas-wrapper.component.html',
-  styleUrls: ['./canvas-wrapper.component.css']
+  styleUrls: ['./canvas-wrapper.component.css'],
 })
-export class CanvasWrapperComponent implements OnInit {
-  @ViewChild(CanvasComponent, { static: true })
+export class CanvasWrapperComponent implements AfterViewInit {
+  @ViewChild(CanvasComponent)
   canvasComponent!: CanvasComponent;
+
+  @Input()
+  enableFileDrop = false;
 
   @Input()
   set image(image: HTMLImageElement) {
@@ -51,9 +54,14 @@ export class CanvasWrapperComponent implements OnInit {
   @Output()
   positionHoverChange = new EventEmitter<Vector | null>();
 
+  @Output()
+  fileDropped = new EventEmitter<FileList>();
+
   pixel!: PixelWithBinaryColors;
 
-  ngOnInit() {
+  dragFileMessage!: string;
+
+  ngAfterViewInit() {
     this.canvasComponent.onViewStateChange = () => {
       const center = this.canvasComponent.getCenter();
       this.viewStateChange.emit({ scale: this.canvasComponent.scale, center });
