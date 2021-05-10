@@ -1,0 +1,16 @@
+<app-file-upload (files)="fileUpload($event)"></app-file-upload>
+<div class="rounded border-2 border-gray-900 flex justify-between p-2 mx-6 mb-3" *ngFor="let file of files; let i = index">
+  <div class="flex">
+    <img class="max-w-15 max-h-10" *ngIf="file.type === fileType.Image" [src]="file.objUrl" [alt]="file.file?.name">
+    <div class="flex flex-col">
+      <div class="">{{ file.file.name }}</div>
+      <p class="">{{ file.humanReadableSize }}</p>
+    </div>
+  </div>
+  <button
+    class="focus:outline-none h-full text-white text-xl py-2.5 px-5 rounded bg-red-700 hover:bg-red-600 hover:shadow-lg"
+    (click)="deleteFile(i)"
+  >
+    DELETE
+  </button>
+</div>

@@ -8,6 +8,8 @@ import { CanvasesComponent } from './canvases-control/canvases.component';
 import { CanvasWrapperComponent } from './canvas-wrapper/canvas-wrapper.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FileUploadModule } from './file-upload/file-upload.module';
+import { PixelDifferenceComponent } from './pixel-difference/pixel-difference.component';
+import { FilesListComponent } from './files-list/files-list.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +17,9 @@ import { FileUploadModule } from './file-upload/file-upload.module';
     CanvasComponent,
     ControlBoardComponent,
     CanvasesComponent,
-    CanvasWrapperComponent
+    CanvasWrapperComponent,
+    PixelDifferenceComponent,
+    FilesListComponent
   ],
   imports: [
     BrowserModule,

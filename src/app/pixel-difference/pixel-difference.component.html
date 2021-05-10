@@ -1,0 +1,75 @@
+<div class="flex justify-center">
+  <ng-template
+    [ngTemplateOutlet]="pixelDifferenceTmplRef"
+    [ngTemplateOutletContext]="{
+            description: 'R',
+            difference: pixelDifference.difference.r,
+            original: pixelDifference.original.r,
+            encrypted: pixelDifference.encrypted.r
+          }"
+  ></ng-template>
+  <ng-template
+    [ngTemplateOutlet]="pixelDifferenceTmplRef"
+    [ngTemplateOutletContext]="{
+            description: 'G',
+            difference: pixelDifference.difference.g,
+            original: pixelDifference.original.g,
+            encrypted: pixelDifference.encrypted.g
+          }"
+  ></ng-template>
+  <ng-template
+    [ngTemplateOutlet]="pixelDifferenceTmplRef"
+    [ngTemplateOutletContext]="{
+            description: 'B',
+            difference: pixelDifference.difference.b,
+            original: pixelDifference.original.b,
+            encrypted: pixelDifference.encrypted.b
+          }"
+  ></ng-template>
+  <div class="flex mx-2 flex-col justify-between">
+    <div
+      class="w-32 h-12 rounded-md mt-8 flex justify-center items-center text-xl"
+      [style.background-color]="pixelDifference.original.color.toRGB()"
+      [style.color]="invertColor(pixelDifference.original.color)"
+    >
+      ORIGINAL
+    </div>
+    <div
+      class="w-32 h-12 rounded-md flex justify-center items-center text-xl"
+      [style.background-color]="pixelDifference.encrypted.color.toRGB()"
+      [style.color]="invertColor(pixelDifference.encrypted.color)"
+    >
+      ENCRYPTED
+    </div>
+  </div>
+</div>
+
+<ng-template
+  #pixelDifferenceTmplRef
+  let-description="description"
+  let-original="original"
+  let-encrypted="encrypted"
+  let-difference="difference"
+>
+  <div class="flex mx-2 flex-col">
+    <div class="text-center text-2xl">{{ description }}</div>
+    <div
+      class="w-12 h-12 rounded-md flex justify-center items-center text-2xl"
+      [style.background-color]="original.toRGB()"
+      [style.color]="invertColor(original)"
+    >
+      {{ original.r + original.g + original.b }}
+    </div>
+    <div [ngClass]="{ 'text-green': difference > 0, 'text-red': difference < 0 }" class="text-xl">
+      {{ difference > 0 ? '+' : '' }}{{ difference }}
+    </div>
+    <div
+      class="w-12 h-12 flex justify-center items-center text-2xl"
+      [style.background-color]="encrypted.toRGB()"
+      [style.color]="invertColor(encrypted)"
+    >
+      {{ encrypted.r + encrypted.g + encrypted.b }}
+    </div>
+  </div>
+</ng-template>
+
