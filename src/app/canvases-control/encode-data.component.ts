@@ -4,22 +4,24 @@ import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.compone
 import { shake } from '../text';
 import { FormBuilder } from '@angular/forms';
 import { FileMeta, ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
-import { formatBytes, invertColor } from '../utils';
+import { download, formatBytes, invertColor } from '../utils';
 import { DomSanitizer } from '@angular/platform-browser';
+import { startWith } from 'rxjs/operators';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-canvases',
-  templateUrl: './canvases.component.html',
-  styleUrls: ['./canvases.component.css']
+  templateUrl: './encode-data.component.html',
+  styleUrls: ['./encode-data.component.css']
 })
-export class CanvasesComponent implements OnInit {
-  @ViewChild('mainCanvas', { static: true })
+export class EncodeDataComponent implements OnInit {
+  @ViewChild('mainCanvas')
   mainCanvas!: CanvasWrapperComponent;
 
-  @ViewChild('secondaryCanvas', { static: true })
+  @ViewChild('secondaryCanvas')
   secondaryCanvas!: CanvasWrapperComponent;
 
-  image!: HTMLImageElement;
+  image$ = new BehaviorSubject<HTMLImageElement | null>(null);
 
   viewState!: CanvasViewState;
 
@@ -39,6 +41,9 @@ export class CanvasesComponent implements OnInit {
   spaceLeft!: number;
   spaceLeftFormatted!: string;
 
+  totalBits!: number;
+  pixelPercentageChange!: number;
+
   rangeBits = [0, 2, 4, 8, 16, 32, 64, 128, 255];
 
   files: File[] = [];
@@ -52,16 +57,36 @@ export class CanvasesComponent implements OnInit {
   constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder, private sanitizer: DomSanitizer, private renderer: Renderer2) {}
 
   async ngOnInit() {
-    const src = '../assets/images/image.jpg';
-    this.image = await this.getImage(src);
+    const buffer = await ImageEncrypt.convertDataToBuffer( shake);
+    const file = new File([buffer], 'file.txt');
+    this.addFiles([file]);
 
-    this.formGroup.valueChanges.subscribe(({ r, g, b }) => {
-      this.calculateAvailableSpace(this.image, new Color(r, g, b));
-    })
+    const src = '../assets/images/image.jpg';
+    await this.getImage(src);
+
+    this.formGroup.valueChanges
+      .pipe(startWith(this.formGroup.value))
+      .subscribe(({ r, g, b }) => {
+        if (this.image$.value) {
+          this.calculateAvailableSpace(this.image$.value, new Color(r, g, b));
+        }
+        this.totalBits = r + g + b;
+        this.pixelPercentageChange = Math.ceil(((this.rangeBits[r] + this.rangeBits[g] + this.rangeBits[b]) / 3) / (255 / 100));
+      })
   }
 
-  updateUploadFiles(files: File[]) {
-    this.files = files;
+  addFiles(files: File[]) {
+    this.files = [ ...files, ...this.files ];
+    this.updateFilesInfo();
+  }
+
+  deleteFile(index: number) {
+    this.files.splice(index, 1);
+    this.files = [ ...this.files ];
+    this.updateFilesInfo();
+  }
+
+  updateFilesInfo() {
     this.totalFileSize = this.files.map(file => file.size).reduce((prev, curr) => prev + curr, 0);
     this.totalFileSizeFormatted = formatBytes(this.totalFileSize);
     this.calculateSpaceLeft();
@@ -76,7 +101,7 @@ export class CanvasesComponent implements OnInit {
   }
 
   calculateSpaceLeft() {
-    if (this.totalFileSize && this.availableSpace) {
+    if (this.totalFileSize != null && this.availableSpace != null) {
       this.spaceLeft = this.availableSpace - this.totalFileSize;
       this.spaceLeftFormatted = formatBytes(this.spaceLeft);
     }
@@ -88,6 +113,7 @@ export class CanvasesComponent implements OnInit {
       image.onload = () => {
         const { r, g, b } = this.formGroup.value;
         this.calculateAvailableSpace(image, new Color(r, g, b));
+        this.image$.next(image);
         resolve(image);
       }
       image.src = src;
@@ -102,7 +128,7 @@ export class CanvasesComponent implements OnInit {
     const arrFiles = Array.from(files);
     if (arrFiles.length === 1) {
       const url = URL.createObjectURL(arrFiles[0]);
-      this.image = await this.getImage(url as any);
+      await this.getImage(url as any);
     }
   }
 
@@ -121,10 +147,7 @@ export class CanvasesComponent implements OnInit {
   }
 
   download() {
-    const link = this.renderer.createElement('a') as HTMLAnchorElement;
-    link.href = this.secondaryCanvas.canvasComponent.canvas.toDataURL();
-    link.download = 'image.jpeg';
-    link.click();
+    download(this.renderer, this.secondaryCanvas.canvasComponent.canvas.toDataURL(), 'encoded.jpg');
   }
 
   encodeIntoImage() {
@@ -162,31 +185,6 @@ export class CanvasesComponent implements OnInit {
       }
 
       this.secondaryCanvas.putImageData(imageData);
-    }
-  }
-
-  async decodeData() {
-    const imageData = this.secondaryCanvas.getImageData();
-    if (imageData) {
-      const decodedLengthOfMetadata = ImageEncrypt.decodePixelsRange(imageData.data, 0, this.metadataBitLength, [2, 2, 2]);
-      const lengthOfMetadataInBytes = parseInt(decodedLengthOfMetadata.binaryString, 2);
-
-      const decodedMetadata = ImageEncrypt.decodePixelsRange(imageData.data, decodedLengthOfMetadata.nextPixelIndex, lengthOfMetadataInBytes, [2, 2, 2]);
-      const decodedMetadataBuffer = ImageEncrypt.convertBinaryStringToBuffer(decodedMetadata.binaryString);
-      const metadataBlob = new Blob([decodedMetadataBuffer]);
-      const metadataText = await metadataBlob.text();
-      const dataInfo: ImageMetaInfo = JSON.parse(metadataText);
-
-      let decodedData = decodedMetadata;
-
-      for (let i = 0; i < dataInfo.files.length; i++) {
-        decodedData = ImageEncrypt.decodePixelsRange(imageData.data, decodedData.nextPixelIndex, dataInfo.files[i].size, [dataInfo.r, dataInfo.g, dataInfo.b]);
-        const decodedBuffer = ImageEncrypt.convertBinaryStringToBuffer(decodedData.binaryString);
-        const blob = new Blob([decodedBuffer])
-        const file = new File([decodedBuffer], dataInfo.files[i].name)
-        const decodedDataText = await file.text();
-        console.log(decodedDataText);
-      }
     }
   }
 }

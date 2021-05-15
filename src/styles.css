@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.interface {
+  border: 4px #282828 solid;
+  background-color: #707070;
+}
+
+.grid-wrapper {
+  background-color: #2f2f2f;
+}
+

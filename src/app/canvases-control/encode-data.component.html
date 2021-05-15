@@ -1,8 +1,8 @@
-<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2">
+<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2" *ngIf="{ image: image$ | async } as async">
   <div class="interface m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
     <div class="flex flex-col">
       <div class="flex">
-        <div class="flex flex-col w-4/6 ml-3">
+        <div class="flex flex-col w-4/6 p-3">
           <ng-template
             [ngTemplateOutlet]="rangeBitsTmplRef"
             [ngTemplateOutletContext]="{ description: 'red', className: 'red', formControl: formGroup.get('r') }"
@@ -16,28 +16,36 @@
             [ngTemplateOutletContext]="{ description: 'blue', className: 'blue', formControl: formGroup.get('b') }"
           ></ng-template>
         </div>
-        <div class="flex flex-col items-center justify-center ml-5">
-          <div class="font-semibold text-center uppercase">
-            available space:
-            <div class="font-medium text-2xl">{{ availableSpaceFormatted }}</div>
+        <div class="flex flex-col justify-around items-center p-4">
+          <div class="flex flex-col items-center">
+            <div>BITS:</div>
+            <div class="font-semibold text-xl">{{ totalBits }} / 24</div>
+          </div>
+          <div class="flex flex-col items-center">
+            <div>CHANGE:</div>
+            <div class="font-semibold text-xl">{{ pixelPercentageChange }}%</div>
           </div>
         </div>
       </div>
-      <div>
+      <div class="mt-4 border-2 rounded border-gray-800 p-3 m-3" *ngIf="position">
+        <div class="flex items-center justify-center text-xl">
+          <div class="mr-5">X: <span class="font-semibold">{{ position.x }}</span></div>
+          <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
+        </div>
         <app-pixel-difference [pixels]="{ main: mainPixel?.color, secondary: encryptedPixel?.color }"></app-pixel-difference>
       </div>
       <div class="mt-4">
-        <div class="font-semibold uppercase text-center">files size: <div class="font-medium text-2xl">{{ totalFileSizeFormatted }}</div></div>
-        <app-files-list (filesChange)="updateUploadFiles($event)"></app-files-list>
+        <app-file-upload (files)="addFiles($event)"></app-file-upload>
+        <app-files-list (delete)="deleteFile($event)" [files]="files" [includeDownload]="false"></app-files-list>
       </div>
     </div>
     <div class="flex flex-col">
-      <div class="uppercase text-green m-4" *ngIf="spaceLeft >= 0; else spaceNotEnoughTmplRef">
-        space left: <span class="text-xl text-black font-semibold">{{ spaceLeftFormatted }}</span>
+      <div class="flex flex-col items-center justify-center ml-5">
+        <div class="font-semibold text-center uppercase">
+          space: {{ totalFileSizeFormatted }} / {{ availableSpaceFormatted }}
+        </div>
+        <div *ngIf="spaceLeft < 0" class="uppercase text-red text-xl">Not enough space for encoding</div>
       </div>
-      <ng-template #spaceNotEnoughTmplRef>
-        <div class="uppercase text-red m-4">exceeded space</div>
-      </ng-template>
       <div class="p-1">
         <button
           (click)="encodeIntoImage()"
@@ -45,10 +53,17 @@
         >
           ENCODE
         </button>
+        <button
+          (click)="download()"
+          class="focus:outline-none w-full h-16 text-white text-xl py-2.5 px-5 rounded bg-blue-700 hover:bg-blue-600 hover:shadow-lg"
+        >
+          DOWNLOAD
+        </button>
       </div>
-      <div *ngIf="position" class="flex border justify-end p-2 text-lg">
-        <div class="mr-3">X: <span class="font-semibold">{{ position.x }}</span></div>
-        <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
+      <div *ngIf="async.image" class="flex border justify-around p-2">
+        <div>W: <span class="font-semibold">{{ async.image.width }}</span></div>
+        <div>H: <span class="font-semibold">{{ async.image.height }}</span></div>
+        <div>PIXELS: <span class="font-semibold">{{ (async.image.width * async.image.height) | number }}</span></div>
       </div>
     </div>
   </div>
@@ -58,7 +73,7 @@
       [enableFileDrop]="true"
       (fileDropped)="updateImage($event)"
       #mainCanvas
-      [image]="image"
+      [image]="async.image"
       [viewState]="viewState"
       (viewStateChange)="updateViewState($event)"
       (positionHoverChange)="updatePosition($event)"
@@ -68,7 +83,7 @@
   <div class="col-span-5 canvas">
     <app-canvas-wrapper
       #secondaryCanvas
-      [image]="image"
+      [image]="async.image"
       [viewState]="viewState"
       (viewStateChange)="updateViewState($event)"
       (positionHoverChange)="updatePosition($event)"

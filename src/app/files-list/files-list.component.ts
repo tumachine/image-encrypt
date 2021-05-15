@@ -1,8 +1,6 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { formatBytes } from '../utils';
+import { Component, EventEmitter, Input, Output, Renderer2 } from '@angular/core';
+import { download, formatBytes } from '../utils';
 import { DomSanitizer } from '@angular/platform-browser';
-import { ImageEncrypt } from '../image-encrypt';
-import { shake } from '../text';
 
 export enum FileType {
   Image,
@@ -24,43 +22,42 @@ export interface FileWrapper {
   templateUrl: './files-list.component.html',
   styleUrls: ['./files-list.component.css']
 })
-export class FilesListComponent implements OnInit {
-  @Output()
-  filesChange = new EventEmitter<File[]>();
-
-  fileType = FileType;
-
-  files: FileWrapper[] = [];
-
-  constructor(private sanitizer: DomSanitizer) {}
-
-  async ngOnInit() {
-    const buffer = await ImageEncrypt.convertDataToBuffer( shake);
-    const file = new File([buffer], 'file.txt');
-    this.fileUpload([file]);
-  }
-
-  fileUpload(files: File[]) {
-    console.log(files);
-    files.forEach(file => {
+export class FilesListComponent {
+  @Input()
+  set files(files: File[]) {
+    this.fileWrappers = files.map(file => {
       let type: FileType = FileType.Any;
       let url: string | any = null;
       if (file.type.match('image.*')) {
         type = FileType.Image;
         url = this.sanitizer.bypassSecurityTrustResourceUrl(URL.createObjectURL(file));
       }
-      this.files.push({ file, type, humanReadableSize: formatBytes(file.size), objUrl: url });
+      return { file, type, humanReadableSize: formatBytes(file.size), objUrl: url };
     })
-
-    this.emitFiles();
   }
 
-  deleteFile(index: number) {
-    this.files.splice(index, 1);
-    this.emitFiles();
-  }
+  @Input()
+  title!: string;
 
-  emitFiles() {
-    this.filesChange.emit(this.files.map(file => file.file));
+  @Input()
+  includeDelete = true;
+
+  @Input()
+  includeDownload = true;
+
+  @Output()
+  delete = new EventEmitter<number>();
+
+  fileType = FileType;
+
+  fileWrappers: FileWrapper[] = [];
+
+  constructor(private sanitizer: DomSanitizer, private renderer: Renderer2) {}
+
+  download(index: number) {
+    const file = this.fileWrappers[index].file;
+
+    const url = window.URL.createObjectURL(file);
+    download(this.renderer, url, file.name);
   }
 }
