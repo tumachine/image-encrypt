@@ -1,7 +1,11 @@
 const materialColors = require("./src/material-colors.js");
 
 module.exports = {
-  purge: [],
+  purge: [
+    './src/**/*.html',
+    './src/**/*.css',
+    './src/**/*.ts',
+  ],
   darkMode: false, // or 'media' or 'class'
   theme: {
     extend: {
