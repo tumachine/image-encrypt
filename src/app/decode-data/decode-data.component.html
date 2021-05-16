@@ -1,4 +1,4 @@
-<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700">
+<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700" *ngIf="{ image: image$ | async } as async">
   <div class="interface m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
     <div class="flex flex-col">
       <div class="flex justify-center text-3xl p-5 font-semibold">IMAGE DECRYPTION</div>
@@ -18,11 +18,30 @@
     </div>
   </div>
 
-  <div class="row-span-2 col-span-5 canvas">
+  <div
+    class="col-span-5 row-span-2 m-5 border-4 border-gray-800 bg-grey-800 border-dotted rounded-md flex justify-center items-center relative"
+    appDragAndDrop
+    (fileDropped)="updateImage($event)"
+    *ngIf="!async.image"
+  >
+    <div class="flex flex-col justify-center items-center">
+      <div class="text-center text-4xl text-white">DROP IMAGE HERE</div>
+      <div class="text-2xl my-5">OR</div>
+      <input class="hidden" type="file" id="fileDropRef" (change)="fileBrowse($event)" />
+      <label
+        class="focus:outline-none text-white text-xl py-2.5 px-5 rounded-md bg-blue-500 hover:bg-blue-600 hover:shadow-lg cursor-pointer"
+        for="fileDropRef"
+      >
+        Browse for image
+      </label>
+    </div>
+  </div>
+
+  <div class="row-span-2 col-span-5 canvas" [ngClass]="{ 'hidden': !async.image }">
     <app-canvas-wrapper
       [enableFileDrop]="true"
       (fileDropped)="updateImage($event)"
-      [image]="image$ | async"
+      [image]="async.image"
     ></app-canvas-wrapper>
   </div>
 </div>

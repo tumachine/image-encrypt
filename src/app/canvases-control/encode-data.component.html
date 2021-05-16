@@ -1,4 +1,4 @@
-<div class="grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700" *ngIf="{ image: image$ | async } as async">
+<div class="grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700" *ngIf="{ image: image$ | async, encoded: encoded$ | async } as async">
   <div class="border border-black bg-grey-600 m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
     <div class="flex flex-col">
       <div class="flex mx-4 mt-2 border-2 border-grey-800">
@@ -27,13 +27,6 @@
           </div>
         </div>
       </div>
-      <div class="border-2 border-grey-800 p-3 mx-4 my-2" *ngIf="position">
-        <div class="flex items-center justify-center text-xl">
-          <div class="mr-5">X: <span class="font-semibold">{{ position.x }}</span></div>
-          <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
-        </div>
-        <app-pixel-difference [pixels]="{ main: mainPixel?.color, secondary: encryptedPixel?.color }"></app-pixel-difference>
-      </div>
       <div class="my-2">
         <app-file-upload (files)="addFiles($event)" title="Drop your files here for encryption"></app-file-upload>
         <app-files-list (delete)="deleteFile($event)" [files]="files" [includeDownload]="false" title="Files to encrypt"></app-files-list>
@@ -46,6 +39,7 @@
       </div>
       <div class="p-1 flex">
         <button
+          *ngIf="async.encoded"
           (click)="download()"
           class="focus:outline-none flex justify-around items-center w-full py-2 px-4 text-white text-xl rounded bg-blue-800 hover:bg-blue-700 hover:shadow-lg m-0.5"
         >
@@ -75,7 +69,26 @@
     </div>
   </div>
 
-  <div class="col-span-5 border-b-2 border-gray-600">
+  <div
+    class="col-span-5 row-span-2 m-5 border-4 border-gray-800 border-dotted rounded-md flex justify-center items-center relative"
+    appDragAndDrop
+    (fileDropped)="updateImage($event)"
+    *ngIf="!async.image"
+  >
+    <div class="flex flex-col justify-center items-center">
+      <div class="text-center text-4xl text-white">DROP IMAGE HERE</div>
+      <div class="text-2xl my-5">OR</div>
+      <input class="hidden" type="file" id="imageDropRef" (change)="fileBrowse($event)" />
+      <label
+        class="focus:outline-none text-white text-xl py-2.5 px-5 rounded-md bg-blue-500 hover:bg-blue-600 hover:shadow-lg cursor-pointer"
+        for="imageDropRef"
+      >
+        Browse for image
+      </label>
+    </div>
+  </div>
+
+  <div class="col-span-5 border-b-2 border-gray-600" [ngClass]="{ 'row-span-2': !async.encoded, 'hidden': !async.image }">
     <app-canvas-wrapper
       [enableFileDrop]="true"
       (fileDropped)="updateImage($event)"
@@ -87,8 +100,9 @@
     >
     </app-canvas-wrapper>
   </div>
-  <div class="col-span-5">
+  <div class="col-span-5" [ngClass]="{ 'hidden': !async.encoded }">
     <app-canvas-wrapper
+      class="relative"
       [enableFileDrop]="true"
       (fileDropped)="updateImage($event)"
       #secondaryCanvas
@@ -97,8 +111,16 @@
       (viewStateChange)="updateViewState($event)"
       (positionHoverChange)="updatePosition($event)"
     >
+      <div class="absolute top-0 left-0 rounded border-2 border-grey-800 p-1 m-2 bg-grey-600" *ngIf="position && async.encoded">
+        <div class="flex items-center justify-center">
+          <div class="mr-5">X: <span class="font-semibold">{{ position.x }}</span></div>
+          <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
+        </div>
+        <app-pixel-difference [pixels]="{ main: mainPixel?.color, secondary: encryptedPixel?.color }"></app-pixel-difference>
+      </div>
     </app-canvas-wrapper>
   </div>
+
 </div>
 
 <ng-template

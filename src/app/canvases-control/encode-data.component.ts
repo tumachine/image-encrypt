@@ -22,6 +22,8 @@ export class EncodeDataComponent implements OnInit {
 
   image$ = new BehaviorSubject<HTMLImageElement | null>(null);
 
+  encoded$ = new BehaviorSubject<boolean>(false);
+
   viewState!: CanvasViewState;
 
   metadataBitLength = 32;
@@ -56,9 +58,9 @@ export class EncodeDataComponent implements OnInit {
   constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder, private sanitizer: DomSanitizer, private renderer: Renderer2) {}
 
   async ngOnInit() {
-    const src = 'assets/images/drop-image.jpg';
-    await this.getImage(src);
-
+    // const src = 'assets/images/drop-image.jpg';
+    // await this.getImage(src);
+    //
     this.formGroup.valueChanges
       .pipe(startWith(this.formGroup.value))
       .subscribe(({ r, g, b }) => {
@@ -79,6 +81,13 @@ export class EncodeDataComponent implements OnInit {
     this.files.splice(index, 1);
     this.files = [ ...this.files ];
     this.updateFilesInfo();
+  }
+
+  fileBrowse(e: Event) {
+    const files = (e.target as HTMLInputElement).files;
+    if (files?.length === 1) {
+      this.updateImage(files);
+    }
   }
 
   updateFilesInfo() {
@@ -109,6 +118,7 @@ export class EncodeDataComponent implements OnInit {
         const { r, g, b } = this.formGroup.value;
         this.calculateAvailableSpace(image, new Color(r, g, b));
         this.image$.next(image);
+        this.encoded$.next(false);
         resolve(image);
       }
       image.src = src;
@@ -128,17 +138,13 @@ export class EncodeDataComponent implements OnInit {
   }
 
   updatePosition(position: Vector | null) {
-    if (position) {
+    if (position && this.secondaryCanvas?.canvasComponent) {
       this.mainPixel = this.mainCanvas.canvasComponent.getPixel(position);
       this.encryptedPixel = this.secondaryCanvas.canvasComponent.getPixel(position);
       if (this.mainPixel) {
         this.position = new Vector(Math.floor(this.mainPixel.position.x), Math.floor(this.mainPixel.position.y));
       }
     }
-  }
-
-  invertColor(color: Color) {
-    return invertColor(color.r, color.g, color.b);
   }
 
   download() {
@@ -153,6 +159,7 @@ export class EncodeDataComponent implements OnInit {
     const imageData = this.mainCanvas.getImageData();
 
     if (imageData) {
+      this.encoded$.next(false);
       const filesInfo: FileMeta[] = [];
       const fileBinaryStrings: string[] = [];
       for (let i = 0; i < this.files.length; i++) {
@@ -178,7 +185,12 @@ export class EncodeDataComponent implements OnInit {
         startOfData = await ImageEncrypt.encodeBinaryString(imageData, startOfData, [meta.r, meta.g, meta.b], fileBinaryStrings[i]);
       }
 
+      this.encoded$.next(true);
       this.secondaryCanvas.putImageData(imageData);
+      setTimeout(() => {
+        this.secondaryCanvas.canvasComponent.onResize();
+        this.mainCanvas.canvasComponent.onResize();
+      })
     }
   }
 }

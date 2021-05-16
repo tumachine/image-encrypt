@@ -28,14 +28,14 @@
   ></ng-template>
   <div class="flex mx-2 flex-col justify-between">
     <div
-      class="w-32 h-12 rounded-md mt-8 flex justify-center items-center text-xl"
+      class="w-32 h-12 rounded-md mt-8 flex justify-center items-center text-lg"
       [style.background-color]="pixelDifference.original.color.toRGB()"
       [style.color]="invertColor(pixelDifference.original.color)"
     >
       ORIGINAL
     </div>
     <div
-      class="w-32 h-12 rounded-md flex justify-center items-center text-xl"
+      class="w-32 h-12 rounded-md flex justify-center items-center text-lg"
       [style.background-color]="pixelDifference.encrypted.color.toRGB()"
       [style.color]="invertColor(pixelDifference.encrypted.color)"
     >
@@ -54,17 +54,17 @@
   <div class="flex mx-2 flex-col">
     <div class="text-center text-2xl">{{ description }}</div>
     <div
-      class="w-12 h-12 rounded-md flex justify-center items-center text-2xl"
+      class="w-10 h-10 rounded-md flex justify-center items-center text-lg"
       [style.background-color]="original.toRGB()"
       [style.color]="invertColor(original)"
     >
       {{ original.r + original.g + original.b }}
     </div>
-    <div [ngClass]="{ 'text-green': difference > 0, 'text-red': difference < 0 }" class="text-xl">
+    <div [ngClass]="{ 'text-green': difference > 0, 'text-red': difference < 0 }" class="text-lg font-semibold">
       {{ difference > 0 ? '+' : '' }}{{ difference }}
     </div>
     <div
-      class="w-12 h-12 flex justify-center items-center text-2xl"
+      class="w-10 h-10 flex justify-center items-center text-lg"
       [style.background-color]="encrypted.toRGB()"
       [style.color]="invertColor(encrypted)"
     >

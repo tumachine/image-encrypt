@@ -28,7 +28,14 @@ export class DecodeDataComponent implements AfterViewInit {
   constructor(private fb: FormBuilder) {}
 
   async ngAfterViewInit() {
-    await this.getImage('assets/images/drop-image.jpg');
+    // await this.getImage('assets/images/drop-image.jpg');
+  }
+
+  fileBrowse(e: Event) {
+    const files = (e.target as HTMLInputElement).files;
+    if (files?.length === 1) {
+      this.updateImage(files);
+    }
   }
 
   async updateImage(files: FileList) {
