@@ -16,6 +16,10 @@ const routes: Routes = [
   {
     path: 'decode',
     component: DecodeDataComponent,
+  },
+  {
+    path: '**',
+    component: RootComponent,
   }
 ]
 

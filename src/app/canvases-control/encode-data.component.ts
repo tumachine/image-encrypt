@@ -56,7 +56,7 @@ export class EncodeDataComponent implements OnInit {
   constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder, private sanitizer: DomSanitizer, private renderer: Renderer2) {}
 
   async ngOnInit() {
-    const src = '../assets/images/drop-image.jpg';
+    const src = 'assets/images/drop-image.jpg';
     await this.getImage(src);
 
     this.formGroup.valueChanges
