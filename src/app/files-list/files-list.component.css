@@ -1,0 +1,7 @@
+.custom-table thead tr td {
+  @apply bg-grey-800 border border-grey-500 text-white text-lg p-2;
+}
+
+.custom-table tbody tr td {
+  @apply bg-grey-500 border border-grey-400 p-2;
+}

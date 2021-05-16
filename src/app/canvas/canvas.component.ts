@@ -57,7 +57,7 @@ export class Pixel {
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'app-canvas overflow-hidden block h-full relative' },
+  host: { class: 'app-canvas overflow-hidden block h-full relative bg-grey-800' },
 })
 export class CanvasComponent {
   @ViewChild('canvas', { static: true })

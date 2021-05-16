@@ -2,12 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-.interface {
-  border: 4px #282828 solid;
-  background-color: #707070;
+/*
+ ************************ CUSTOM RANGE ************************
+ */
+
+input[type=range].custom-range {
+  background-color: transparent;
+  height: 38px;
+  -webkit-appearance: none;
+  width: 100%;
 }
 
-.grid-wrapper {
-  background-color: #2f2f2f;
+input[type=range].custom-range:focus {
+  outline: none;
 }
-
+input[type=range].custom-range::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 10px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 1px 1px 1px #000000;
+  background: #3071A9;
+  border-radius: 5px;
+  border: 1px solid #000000;
+}
+input[type=range].custom-range::-webkit-slider-thumb {
+  box-shadow: 1px 1px 1px #000000;
+  border: 1px solid #000000;
+  height: 30px;
+  width: 15px;
+  border-radius: 5px;
+  background: #FFFFFF;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -11px;
+}
+input[type=range].custom-range:focus::-webkit-slider-runnable-track {
+  background: #3071A9;
+}
+input[type=range].custom-range::-moz-range-track {
+  width: 100%;
+  height: 10px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 1px 1px 1px #000000;
+  background: #3071A9;
+  border-radius: 5px;
+  border: 1px solid #000000;
+}
+input[type=range].custom-range::-moz-range-thumb {
+  box-shadow: 1px 1px 1px #000000;
+  border: 1px solid #000000;
+  height: 30px;
+  width: 15px;
+  border-radius: 5px;
+  /*background: #FFFFFF;*/
+  cursor: pointer;
+}
+input[type=range].custom-range::-ms-track {
+  width: 100%;
+  height: 10px;
+  cursor: pointer;
+  animate: 0.2s;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+input[type=range].custom-range::-ms-fill-lower {
+  background: #3071A9;
+  border: 1px solid #000000;
+  border-radius: 10px;
+  box-shadow: 1px 1px 1px #000000;
+}
+input[type=range].custom-range::-ms-fill-upper {
+  background: #3071A9;
+  border: 1px solid #000000;
+  border-radius: 10px;
+  box-shadow: 1px 1px 1px #000000;
+}
+input[type=range].custom-range::-ms-thumb {
+  margin-top: 1px;
+  box-shadow: 1px 1px 1px #000000;
+  border: 1px solid #000000;
+  height: 30px;
+  width: 15px;
+  border-radius: 5px;
+  background: #FFFFFF;
+  cursor: pointer;
+}
+input[type=range].custom-range:focus::-ms-fill-lower {
+  background: #3071A9;
+}
+input[type=range].custom-range:focus::-ms-fill-upper {
+  background: #3071A9;
+}

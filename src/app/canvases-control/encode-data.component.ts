@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { CanvasViewState, Color, Pixel, Vector } from '../canvas/canvas.component';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
-import { shake } from '../text';
 import { FormBuilder } from '@angular/forms';
 import { FileMeta, ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
 import { download, formatBytes, invertColor } from '../utils';
@@ -57,11 +56,7 @@ export class EncodeDataComponent implements OnInit {
   constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder, private sanitizer: DomSanitizer, private renderer: Renderer2) {}
 
   async ngOnInit() {
-    const buffer = await ImageEncrypt.convertDataToBuffer( shake);
-    const file = new File([buffer], 'file.txt');
-    this.addFiles([file]);
-
-    const src = '../assets/images/image.jpg';
+    const src = '../assets/images/drop-image.jpg';
     await this.getImage(src);
 
     this.formGroup.valueChanges
@@ -151,11 +146,10 @@ export class EncodeDataComponent implements OnInit {
   }
 
   encodeIntoImage() {
-    const meta: ImageMetaInfo = { ...this.formGroup.value, files: [] }
-    this.encodeData(shake, meta);
+    this.encodeData(this.formGroup.value);
   }
 
-  async encodeData(data: any, meta: ImageMetaInfo) {
+  async encodeData(meta: ImageMetaInfo) {
     const imageData = this.mainCanvas.getImageData();
 
     if (imageData) {

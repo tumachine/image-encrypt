@@ -1,5 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
+import { Component, Output, EventEmitter, Input } from '@angular/core';
 
 @Component({
   selector: 'app-file-upload',
@@ -8,6 +7,9 @@ import { DomSanitizer } from '@angular/platform-browser';
   host: { class: 'app-file-upload block' }
 })
 export class FileUploadComponent {
+  @Input()
+  title = 'Drag and drop file(s) here';
+
   @Output()
   files = new EventEmitter<File[]>();
 

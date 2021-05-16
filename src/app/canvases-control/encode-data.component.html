@@ -1,8 +1,8 @@
-<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2" *ngIf="{ image: image$ | async } as async">
-  <div class="interface m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
+<div class="grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700" *ngIf="{ image: image$ | async } as async">
+  <div class="border border-black bg-grey-600 m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
     <div class="flex flex-col">
-      <div class="flex">
-        <div class="flex flex-col w-4/6 p-3">
+      <div class="flex mx-4 mt-2 border-2 border-grey-800">
+        <div class="flex flex-col w-4/6 p-3 border-r-2 border-grey-800">
           <ng-template
             [ngTemplateOutlet]="rangeBitsTmplRef"
             [ngTemplateOutletContext]="{ description: 'red', className: 'red', formControl: formGroup.get('r') }"
@@ -16,7 +16,7 @@
             [ngTemplateOutletContext]="{ description: 'blue', className: 'blue', formControl: formGroup.get('b') }"
           ></ng-template>
         </div>
-        <div class="flex flex-col justify-around items-center p-4">
+        <div class="flex flex-col flex-grow justify-around items-center p-4">
           <div class="flex flex-col items-center">
             <div>BITS:</div>
             <div class="font-semibold text-xl">{{ totalBits }} / 24</div>
@@ -27,40 +27,47 @@
           </div>
         </div>
       </div>
-      <div class="mt-4 border-2 rounded border-gray-800 p-3 m-3" *ngIf="position">
+      <div class="border-2 border-grey-800 p-3 mx-4 my-2" *ngIf="position">
         <div class="flex items-center justify-center text-xl">
           <div class="mr-5">X: <span class="font-semibold">{{ position.x }}</span></div>
           <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
         </div>
         <app-pixel-difference [pixels]="{ main: mainPixel?.color, secondary: encryptedPixel?.color }"></app-pixel-difference>
       </div>
-      <div class="mt-4">
-        <app-file-upload (files)="addFiles($event)"></app-file-upload>
-        <app-files-list (delete)="deleteFile($event)" [files]="files" [includeDownload]="false"></app-files-list>
+      <div class="my-2">
+        <app-file-upload (files)="addFiles($event)" title="Drop your files here for encryption"></app-file-upload>
+        <app-files-list (delete)="deleteFile($event)" [files]="files" [includeDownload]="false" title="Files to encrypt"></app-files-list>
       </div>
     </div>
     <div class="flex flex-col">
       <div class="flex flex-col items-center justify-center ml-5">
-        <div class="font-semibold text-center uppercase">
-          space: {{ totalFileSizeFormatted }} / {{ availableSpaceFormatted }}
-        </div>
-        <div *ngIf="spaceLeft < 0" class="uppercase text-red text-xl">Not enough space for encoding</div>
+        <div *ngIf="spaceLeft < 0" class="uppercase text-red-900 text-xl font-bold">Not enough space for encoding</div>
+        <div *ngIf="files.length === 0" class="uppercase text-red-900 text-xl font-bold">Upload file(s) to encode</div>
       </div>
-      <div class="p-1">
-        <button
-          (click)="encodeIntoImage()"
-          class="focus:outline-none w-full h-16 text-white text-xl py-2.5 px-5 rounded bg-blue-700 hover:bg-blue-600 hover:shadow-lg"
-        >
-          ENCODE
-        </button>
+      <div class="p-1 flex">
         <button
           (click)="download()"
-          class="focus:outline-none w-full h-16 text-white text-xl py-2.5 px-5 rounded bg-blue-700 hover:bg-blue-600 hover:shadow-lg"
+          class="focus:outline-none flex justify-around items-center w-full py-2 px-4 text-white text-xl rounded bg-blue-800 hover:bg-blue-700 hover:shadow-lg m-0.5"
         >
-          DOWNLOAD
+          <span class="flex-grow">DOWNLOAD</span>
+          <img src="assets/icons/download.svg" class="w-7"/>
+        </button>
+        <button
+          (click)="encodeIntoImage()"
+          class="focus:outline-none flex justify-around items-center w-full py-2 px-4 text-white text-xl rounded bg-blue-800 hover:bg-blue-700 hover:shadow-lg m-0.5"
+          [ngClass]="{ 'bg-grey-400 hover:bg-grey-400 hover:shadow-none': spaceLeft < 0 || files.length === 0 }"
+          [disabled]="spaceLeft < 0 || files.length === 0"
+        >
+          <span class="flex-grow">ENCODE</span>
+          <img src="assets/icons/lock.svg" class="w-5"/>
         </button>
       </div>
-      <div *ngIf="async.image" class="flex border justify-around p-2">
+      <div class="flex border border-grey-800 justify-center p-2 uppercase">
+        <div>
+          space: <span class="font-semibold">{{ totalFileSizeFormatted }} / {{ availableSpaceFormatted }}</span>
+        </div>
+      </div>
+      <div *ngIf="async.image" class="flex border border-grey-800 justify-around p-2">
         <div>W: <span class="font-semibold">{{ async.image.width }}</span></div>
         <div>H: <span class="font-semibold">{{ async.image.height }}</span></div>
         <div>PIXELS: <span class="font-semibold">{{ (async.image.width * async.image.height) | number }}</span></div>
@@ -68,7 +75,7 @@
     </div>
   </div>
 
-  <div class="col-span-5 canvas">
+  <div class="col-span-5 border-b-2 border-gray-600">
     <app-canvas-wrapper
       [enableFileDrop]="true"
       (fileDropped)="updateImage($event)"
@@ -80,8 +87,10 @@
     >
     </app-canvas-wrapper>
   </div>
-  <div class="col-span-5 canvas">
+  <div class="col-span-5">
     <app-canvas-wrapper
+      [enableFileDrop]="true"
+      (fileDropped)="updateImage($event)"
       #secondaryCanvas
       [image]="async.image"
       [viewState]="viewState"
@@ -105,5 +114,5 @@
       <div class="ml-5">{{ formControl?.value }} bits</div>
     </div>
   </div>
-  <input [formControl]="formControl" type="range" [id]="description" min="0" max="8">
+  <input class="custom-range" [formControl]="formControl" type="range" [id]="description" min="0" max="8">
 </ng-template>

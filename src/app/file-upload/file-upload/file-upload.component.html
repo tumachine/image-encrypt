@@ -1,7 +1,7 @@
 <div class="h-full p-4">
   <div class="h-full relative flex items-center justify-evenly border-2 border-gray-400 border-dashed" appDragAndDrop (fileDropped)="fileDropped($event)">
     <div class="w-64 h-36 flex flex-col items-center justify-evenly">
-      <div class="hello font-semibold">Drag and drop file(s) here</div>
+      <div class="text-center font-semibold">{{ title }}</div>
       <div>or</div>
       <input class="hidden" type="file" id="fileDropRef" multiple (change)="fileBrowse($event)" />
       <label
@@ -13,17 +13,3 @@
     </div>
   </div>
 </div>
-<!--<div class="">-->
-<!--  <div class="" *ngFor="let fileWrapper of files; let i = index">-->
-<!--    <div class="">-->
-<!--      <div class="">-->
-<!--        {{ fileWrapper.file?.name }}-->
-<!--      </div>-->
-<!--      <img class="max-w-15 max-h-10" [src]="fileWrapper.objUrl" [alt]="fileWrapper.file?.name">-->
-<!--      <p class="">-->
-<!--        {{ fileWrapper.humanReadableSize }}-->
-<!--      </p>-->
-<!--    </div>-->
-<!--    <button class="" (click)="deleteFile(i)">DELETE</button>-->
-<!--  </div>-->
-<!--</div>-->
