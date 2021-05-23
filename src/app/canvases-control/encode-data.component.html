@@ -20,7 +20,7 @@
         <app-files-list (delete)="deleteFile($event)" [files]="async.files " [includeDownload]="false" title="Files to encrypt"></app-files-list>
       </div>
       <div *ngIf="async.image && async.files.length > 0">
-        <div class="-mb-4 font-semibold text-center interface-item">Change which bits of each pixel to modify</div>
+        <div class="-mb-4 font-semibold text-center interface-item">Change how many bits of each pixel to modify</div>
         <div class="flex flex-col interface-item">
           <ng-template
             [ngTemplateOutlet]="rangeBitsTmplRef"
@@ -35,6 +35,11 @@
             [ngTemplateOutletContext]="{ description: 'blue', className: 'blue', formControl: formGroup.get('b') }"
           ></ng-template>
         </div>
+        <div class="interface-item">
+          <input type="checkbox" id="includePasswordCheckbox" value="Include password" formControlName="includePassword" />
+          <label class="m-2 text-lg font-semibold" for="includePasswordCheckbox">With Password</label>
+          <input class="block h-8" type="text" formControlName="password" placeholder="Password" *ngIf="formGroup.get('includePassword').value">
+        </div>
       </div>
     </div>
 
@@ -48,10 +53,7 @@
           <div class="font-semibold alert" [ngClass]="spaceLeft.bytes > 0 ? 'alert-success' : 'alert-danger'">
             {{ spaceLeft.bytes > 0 ? 'Enough space:' : 'Not enough space for encoding:' }}
             <div>
-              <span
-                class="font-bold"
-                [ngClass]="spaceLeft.bytes > 0 ? 'text-green-900' : 'text-red-900'"
-              >
+              <span class="font-bold" [ngClass]="spaceLeft.bytes > 0 ? 'text-green-900' : 'text-red-900'">
                 {{ totalFileSize?.formatted }}</span> / {{ availableImageSpace?.formatted }} = {{ totalFileSize.bytes / (availableImageSpace.bytes / 100) | number }}%
             </div>
           </div>
@@ -93,6 +95,7 @@
       <label
         class="btn btn-primary flex justify-center"
         for="imageDropRef"
+        *ngIf="!async.loading"
       >
         Browse for image
       </label>

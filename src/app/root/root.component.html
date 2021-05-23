@@ -1,0 +1,32 @@
+<div class="h-screen flex flex-col justify-center items-center bg-gray-800 relative">
+  <div class="uppercase text-8xl text-white mb-12">Image stenography</div>
+  <div>
+    <p class="text-white text-xl mb-12">Encrypt files into image by changing color of each pixel by a bit, decrypt automatically or with password</p>
+  </div>
+  <div class="flex">
+    <button
+      class="focus:outline-none flex justify-around items-center w-1/2 py-2 px-4 text-white text-7xl rounded bg-blue-600 hover:bg-blue-800 hover:shadow-lg m-0.5 mr-5"
+      routerLink="/encode"
+    >
+      <span class="flex-grow">ENCODE</span>
+      <div class="w-28 flex justify-center">
+        <img src="assets/icons/encrypt.jpg" class="w-20"/>
+      </div>
+    </button>
+    <button
+      class="focus:outline-none flex justify-around items-center w-1/2 py-2 px-4 text-white text-7xl rounded bg-green-600 hover:bg-green-800 hover:shadow-lg m-0.5"
+      routerLink="/decode"
+    >
+      <span class="flex-grow">DECODE</span>
+      <div class="w-28 flex justify-center">
+        <img src="assets/icons/lock-open.svg" class="w-24"/>
+      </div>
+    </button>
+  </div>
+  <div class="absolute left-2 bottom-2">
+    <div class="text-white text-xl">Made by Tumen</div>
+    <div class="flex items-center">
+      <a class="text-blue-700-accent block text-3xl" href="https://github.com/tumachine">Github: <img class="inline-block w-8" src="assets/icons/github.png"/></a>
+    </div>
+  </div>
+</div>

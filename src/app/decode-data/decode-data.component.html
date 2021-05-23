@@ -17,6 +17,10 @@
         <div class="flex-grow text-center text-4xl font-bold text-grey-900">Decode mode</div>
       </div>
       <app-files-list *ngIf="async.files.length > 0" [files]="async.files" title="Decoded files:" [includeDelete]="false"></app-files-list>
+      <div *ngIf="async.image && !async.decoded" [formGroup]="formGroup" class="interface-item p-2">
+        <div class="mb-2 font-semibold">Password:</div>
+        <input class="h-8 w-full" placeholder="Password" type="text" formControlName="password">
+      </div>
     </div>
     <div>
       <div *ngIf="!async.image" class="alert alert-danger">Upload image to decode</div>

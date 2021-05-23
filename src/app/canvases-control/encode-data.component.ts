@@ -55,6 +55,8 @@ export class EncodeDataComponent implements OnInit {
     r: 4,
     g: 4,
     b: 4,
+    password: null,
+    includePassword: false,
   })
 
   constructor(private fb: FormBuilder, private renderer: Renderer2, private imageEncryptService: ImageEncryptService) {}
@@ -121,7 +123,7 @@ export class EncodeDataComponent implements OnInit {
   reset() {
     this.image$.next(null);
     this.files$.next([]);
-    this.formGroup.reset({ r: 4, g: 4, b: 4 });
+    this.formGroup.reset({ r: 4, g: 4, b: 4, password: null, includePassword: false });
     this.encoded$.next(false);
   }
 
@@ -150,13 +152,13 @@ export class EncodeDataComponent implements OnInit {
   }
 
   async encodeData() {
-    const meta = this.formGroup.value;
+    const { includePassword, password, ...meta } = this.formGroup.value;
     const imageData = this.mainCanvas.getImageData();
 
     if (imageData) {
       this.encoded$.next(false);
 
-      await this.imageEncryptService.encodeData(meta, this.files$.value, imageData);
+      await this.imageEncryptService.encodeData(meta, this.files$.value, imageData, includePassword ? password : null);
       this.secondaryCanvas.putImageData(imageData);
 
       setTimeout(() => {

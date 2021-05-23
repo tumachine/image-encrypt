@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
 import { BehaviorSubject } from 'rxjs';
@@ -9,7 +9,7 @@ import { ImageEncryptService } from '../image-encrypt.service';
   templateUrl: './decode-data.component.html',
   styleUrls: ['./decode-data.component.css']
 })
-export class DecodeDataComponent {
+export class DecodeDataComponent implements OnInit {
   @ViewChild(CanvasWrapperComponent)
   canvasWrapper!: CanvasWrapperComponent;
 
@@ -25,9 +25,20 @@ export class DecodeDataComponent {
 
   errorMessage$ = new BehaviorSubject<string>('');
 
-  readonly formGroup = this.fb.group({})
+  readonly formGroup = this.fb.group({
+    password: null
+  })
 
   constructor(private fb: FormBuilder, private imageEncryptService: ImageEncryptService) {}
+
+  ngOnInit() {
+    this.image$.subscribe(image => {
+      if (image) {
+        this.reset();
+        setTimeout(() => this.decodeData());
+      }
+    });
+  }
 
   fileBrowse(e: Event) {
     const files = (e.target as HTMLInputElement).files;
@@ -49,6 +60,7 @@ export class DecodeDataComponent {
     this.errorMessage$.next('');
     this.image$.next(null);
     this.files$.next([]);
+    this.formGroup.reset();
   }
 
   async decodeData() {
@@ -58,12 +70,13 @@ export class DecodeDataComponent {
       try {
         this.decoded$.next(false);
         this.errorMessage$.next('');
-        const { meta, files } = await this.imageEncryptService.decodeData(imageData);
+        const { password } = this.formGroup.value;
+        const { meta, files } = await this.imageEncryptService.decodeData(imageData, password ? password : null);
 
         this.files$.next(files);
         this.decoded$.next(true);
       } catch {
-        this.errorMessage$.next('Cannot decrypt this image')
+        this.errorMessage$.next('Could not decrypt this image, try with password')
       }
       this.loading$.next(false);
     }
