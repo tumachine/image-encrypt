@@ -14,6 +14,7 @@ import { RouterModule } from '@angular/router';
 import { RootComponent } from './root/root.component';
 import { AppRoutingModule } from './app-routing.module';
 import { DecodeDataComponent } from './decode-data/decode-data.component';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -33,6 +34,7 @@ import { DecodeDataComponent } from './decode-data/decode-data.component';
     FileUploadModule,
     RouterModule,
     AppRoutingModule,
+    HttpClientModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

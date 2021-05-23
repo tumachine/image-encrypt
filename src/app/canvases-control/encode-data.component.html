@@ -1,8 +1,27 @@
-<div class="grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700" *ngIf="{ image: image$ | async, encoded: encoded$ | async } as async">
-  <div class="border border-black bg-grey-600 m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
+<div
+  class="grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700"
+  *ngIf="{
+    image: image$ | async,
+    loading: loading$ | async,
+    encoded: encoded$ | async,
+    files: files$ | async
+  } as async"
+>
+  <div class="interface row-span-2 col-span-2" [formGroup]="formGroup">
     <div class="flex flex-col">
-      <div class="flex mx-4 mt-2 border-2 border-grey-800">
-        <div class="flex flex-col w-4/6 p-3 border-r-2 border-grey-800">
+      <div class="flex p-2 uppercase items-center">
+        <a routerLink="/decode" class="border bg-grey-500 hover:bg-grey-400 w-3/12 rounded p-2 uppercase text-xs text-black no-underline">
+          switch to decode mode
+        </a>
+        <div class="flex-grow text-center text-4xl font-bold text-grey-900">Encode mode</div>
+      </div>
+      <div>
+        <app-file-upload (files)="addFiles($event)" title="Drop your files here for encryption"></app-file-upload>
+        <app-files-list (delete)="deleteFile($event)" [files]="async.files " [includeDownload]="false" title="Files to encrypt"></app-files-list>
+      </div>
+      <div *ngIf="async.image && async.files.length > 0">
+        <div class="-mb-4 font-semibold text-center interface-item">Change which bits of each pixel to modify</div>
+        <div class="flex flex-col interface-item">
           <ng-template
             [ngTemplateOutlet]="rangeBitsTmplRef"
             [ngTemplateOutletContext]="{ description: 'red', className: 'red', formControl: formGroup.get('r') }"
@@ -16,55 +35,47 @@
             [ngTemplateOutletContext]="{ description: 'blue', className: 'blue', formControl: formGroup.get('b') }"
           ></ng-template>
         </div>
-        <div class="flex flex-col flex-grow justify-around items-center p-4">
-          <div class="flex flex-col items-center">
-            <div>BITS:</div>
-            <div class="font-semibold text-xl">{{ totalBits }} / 24</div>
-          </div>
-          <div class="flex flex-col items-center">
-            <div>CHANGE:</div>
-            <div class="font-semibold text-xl">{{ pixelPercentageChange }}%</div>
+      </div>
+    </div>
+
+    <div class="flex flex-col">
+      <div class="flex flex-col">
+        <div *ngIf="!async.image" class="alert alert-danger">Upload image to encode</div>
+        <div *ngIf="async.files?.length === 0" class="alert alert-danger">Upload file(s) to encode into image</div>
+        <div *ngIf="async.encoded" class="alert alert-success">
+          Successfully encrypted, you can <span class="font-bold text-blue-700-accent underline cursor-pointer" (click)="download()">download encrypted image</span></div>
+        <div *ngIf="async.image && async.files.length > 0">
+          <div class="font-semibold alert" [ngClass]="spaceLeft.bytes > 0 ? 'alert-success' : 'alert-danger'">
+            {{ spaceLeft.bytes > 0 ? 'Enough space:' : 'Not enough space for encoding:' }}
+            <div>
+              <span
+                class="font-bold"
+                [ngClass]="spaceLeft.bytes > 0 ? 'text-green-900' : 'text-red-900'"
+              >
+                {{ totalFileSize?.formatted }}</span> / {{ availableImageSpace?.formatted }} = {{ totalFileSize.bytes / (availableImageSpace.bytes / 100) | number }}%
+            </div>
           </div>
         </div>
       </div>
-      <div class="my-2">
-        <app-file-upload (files)="addFiles($event)" title="Drop your files here for encryption"></app-file-upload>
-        <app-files-list (delete)="deleteFile($event)" [files]="files" [includeDownload]="false" title="Files to encrypt"></app-files-list>
+      <div *ngIf="async.image" class="flex justify-around interface-item mb-0">
+        <div>W: <span class="font-semibold">{{ async.image.width }}</span></div>
+        <div>H: <span class="font-semibold">{{ async.image.height }}</span></div>
+        <div>PIXELS: <span class="font-semibold">{{ (async.image.width * async.image.height) | number }}</span></div>
+        <div *ngIf="position">X: <span class="font-semibold">{{ position.x }}</span></div>
+        <div *ngIf="position">Y: <span class="font-semibold">{{ position.y }}</span></div>
       </div>
-    </div>
-    <div class="flex flex-col">
-      <div class="flex flex-col items-center justify-center ml-5">
-        <div *ngIf="spaceLeft < 0" class="uppercase text-red-900 text-xl font-bold">Not enough space for encoding</div>
-        <div *ngIf="files.length === 0" class="uppercase text-red-900 text-xl font-bold">Upload file(s) to encode</div>
-      </div>
-      <div class="p-1 flex">
-        <button
-          *ngIf="async.encoded"
-          (click)="download()"
-          class="focus:outline-none flex justify-around items-center w-full py-2 px-4 text-white text-xl rounded bg-blue-800 hover:bg-blue-700 hover:shadow-lg m-0.5"
-        >
-          <span class="flex-grow">DOWNLOAD</span>
-          <img src="assets/icons/download.svg" class="w-7"/>
+      <div class="flex">
+        <button (click)="reset()" class="btn btn-light font-semibold mx-1">
+          <span class="flex-grow">RESET</span>
         </button>
         <button
-          (click)="encodeIntoImage()"
-          class="focus:outline-none flex justify-around items-center w-full py-2 px-4 text-white text-xl rounded bg-blue-800 hover:bg-blue-700 hover:shadow-lg m-0.5"
-          [ngClass]="{ 'bg-grey-400 hover:bg-grey-400 hover:shadow-none': spaceLeft < 0 || files.length === 0 }"
-          [disabled]="spaceLeft < 0 || files.length === 0"
+          (click)="encodeData()"
+          class="btn btn-primary mx-1"
+          [disabled]="spaceLeft?.bytes < 0 || async.files.length === 0 || !async.image"
         >
           <span class="flex-grow">ENCODE</span>
           <img src="assets/icons/lock.svg" class="w-5"/>
         </button>
-      </div>
-      <div class="flex border border-grey-800 justify-center p-2 uppercase">
-        <div>
-          space: <span class="font-semibold">{{ totalFileSizeFormatted }} / {{ availableSpaceFormatted }}</span>
-        </div>
-      </div>
-      <div *ngIf="async.image" class="flex border border-grey-800 justify-around p-2">
-        <div>W: <span class="font-semibold">{{ async.image.width }}</span></div>
-        <div>H: <span class="font-semibold">{{ async.image.height }}</span></div>
-        <div>PIXELS: <span class="font-semibold">{{ (async.image.width * async.image.height) | number }}</span></div>
       </div>
     </div>
   </div>
@@ -80,16 +91,21 @@
       <div class="text-2xl my-5">OR</div>
       <input class="hidden" type="file" id="imageDropRef" (change)="fileBrowse($event)" />
       <label
-        class="focus:outline-none text-white text-xl py-2.5 px-5 rounded-md bg-blue-500 hover:bg-blue-600 hover:shadow-lg cursor-pointer"
+        class="btn btn-primary flex justify-center"
         for="imageDropRef"
       >
         Browse for image
       </label>
+      <button [disabled]="async.loading" class="btn btn-secondary m-2 flex justify-center" (click)="loadRandomImage()">
+        Load random image
+      </button>
+      <div class="alert alert-info" *ngIf="async.loading">Loading Random Image, please wait</div>
     </div>
   </div>
 
   <div class="col-span-5 border-b-2 border-gray-600" [ngClass]="{ 'row-span-2': !async.encoded, 'hidden': !async.image }">
     <app-canvas-wrapper
+      class="relative"
       [enableFileDrop]="true"
       (fileDropped)="updateImage($event)"
       #mainCanvas
@@ -98,6 +114,7 @@
       (viewStateChange)="updateViewState($event)"
       (positionHoverChange)="updatePosition($event)"
     >
+      <div *ngIf="async.encoded" class="absolute top-2 left-96 text-3xl bg-grey-300 rounded-md p-1 font-bold uppercase">Original</div>
     </app-canvas-wrapper>
   </div>
   <div class="col-span-5" [ngClass]="{ 'hidden': !async.encoded }">
@@ -111,13 +128,12 @@
       (viewStateChange)="updateViewState($event)"
       (positionHoverChange)="updatePosition($event)"
     >
-      <div class="absolute top-0 left-0 rounded border-2 border-grey-800 p-1 m-2 bg-grey-600" *ngIf="position && async.encoded">
-        <div class="flex items-center justify-center">
-          <div class="mr-5">X: <span class="font-semibold">{{ position.x }}</span></div>
-          <div>Y: <span class="font-semibold">{{ position.y }}</span></div>
-        </div>
-        <app-pixel-difference [pixels]="{ main: mainPixel?.color, secondary: encryptedPixel?.color }"></app-pixel-difference>
-      </div>
+      <div *ngIf="async.encoded" class="absolute top-2 left-96 text-3xl bg-blue rounded-md p-1 font-bold uppercase">Encoded</div>
+      <app-pixel-difference
+        class="absolute -top-1/2 left-0 bg-grey-800 border border-bg-grey-900 rounded p-1"
+        [pixels]="{ main: mainPixel?.color, secondary: encryptedPixel?.color }"
+      >
+      </app-pixel-difference>
     </app-canvas-wrapper>
   </div>
 

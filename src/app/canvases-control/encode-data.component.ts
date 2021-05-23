@@ -1,15 +1,20 @@
-import { ChangeDetectorRef, Component, OnInit, Renderer2, ViewChild } from '@angular/core';
-import { CanvasViewState, Color, Pixel, Vector } from '../canvas/canvas.component';
+import { Component, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { CanvasViewState, Pixel, Vector } from '../canvas/canvas.component';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
 import { FormBuilder } from '@angular/forms';
-import { FileMeta, ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
-import { download, formatBytes, invertColor } from '../utils';
-import { DomSanitizer } from '@angular/platform-browser';
-import { startWith } from 'rxjs/operators';
-import { BehaviorSubject } from 'rxjs';
+import { download, formatBytes } from '../utils';
+import { startWith, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, of, Subject } from 'rxjs';
+import { ImageEncryptService } from '../image-encrypt.service';
+import { fromPromise } from 'rxjs/internal-compatibility';
+
+interface Size {
+  bytes: number,
+  formatted: string,
+}
 
 @Component({
-  selector: 'app-canvases',
+  selector: 'app-encode-data',
   templateUrl: './encode-data.component.html',
   styleUrls: ['./encode-data.component.css']
 })
@@ -22,6 +27,8 @@ export class EncodeDataComponent implements OnInit {
 
   image$ = new BehaviorSubject<HTMLImageElement | null>(null);
 
+  loading$ = new BehaviorSubject<boolean>(false);
+
   encoded$ = new BehaviorSubject<boolean>(false);
 
   viewState!: CanvasViewState;
@@ -33,21 +40,16 @@ export class EncodeDataComponent implements OnInit {
   mainPixel!: Pixel | null;
   encryptedPixel!: Pixel | null;
 
-  availableSpace!: number;
-  availableSpaceFormatted!: string;
-
-  totalFileSize!: number;
-  totalFileSizeFormatted!: string;
-
-  spaceLeft!: number;
-  spaceLeftFormatted!: string;
+  availableImageSpace!: Size;
+  totalFileSize!: Size;
+  spaceLeft!: Size;
 
   totalBits!: number;
-  pixelPercentageChange!: number;
 
-  rangeBits = [0, 2, 4, 8, 16, 32, 64, 128, 255];
+  rangeBits = [0, 1, 3, 7, 15, 31, 63, 127, 255];
 
-  files: File[] = [];
+  files$ = new BehaviorSubject<File[]>([]);
+
 
   readonly formGroup = this.fb.group({
     r: 4,
@@ -55,32 +57,45 @@ export class EncodeDataComponent implements OnInit {
     b: 4,
   })
 
-  constructor(private cdRef: ChangeDetectorRef, private fb: FormBuilder, private sanitizer: DomSanitizer, private renderer: Renderer2) {}
+  constructor(private fb: FormBuilder, private renderer: Renderer2, private imageEncryptService: ImageEncryptService) {}
 
-  async ngOnInit() {
-    // const src = 'assets/images/drop-image.jpg';
-    // await this.getImage(src);
-    //
-    this.formGroup.valueChanges
-      .pipe(startWith(this.formGroup.value))
-      .subscribe(({ r, g, b }) => {
-        if (this.image$.value) {
-          this.calculateAvailableSpace(this.image$.value, new Color(r, g, b));
+  ngOnInit() {
+    combineLatest([this.formGroup.valueChanges.pipe(startWith(this.formGroup.value)), this.image$])
+      .subscribe(([color, image]) => {
+        if (image) {
+          this.availableImageSpace = this.wrapSize(Math.floor(image.width * image.height * (color.r + color.g + color.b) / 8))
+          this.calculateSpaceLeft();
         }
-        this.totalBits = r + g + b;
-        this.pixelPercentageChange = Math.ceil(((this.rangeBits[r] + this.rangeBits[g] + this.rangeBits[b]) / 3) / (255 / 100));
-      })
+      });
+
+    this.formGroup.valueChanges.pipe(startWith(this.formGroup.value)).subscribe(({ r, g, b }) => {
+      this.totalBits = r + g + b;
+    })
+
+    this.image$.subscribe(image => {
+      this.loading$.next(false);
+    })
+
+    this.files$.subscribe(files => {
+      this.totalFileSize = this.wrapSize(files.map(file => file.size).reduce((prev, curr) => prev + curr, 0));
+      this.calculateSpaceLeft();
+    })
+  }
+
+  loadRandomImage() {
+    this.loading$.next(true);
+    this.imageEncryptService.loadRandomImageSrc().pipe(switchMap(src => fromPromise(this.imageEncryptService.createImage(src))))
+      .subscribe(img => this.image$.next(img));
   }
 
   addFiles(files: File[]) {
-    this.files = [ ...files, ...this.files ];
-    this.updateFilesInfo();
+    this.files$.next([ ...files, ...this.files$.value ]);
   }
 
   deleteFile(index: number) {
-    this.files.splice(index, 1);
-    this.files = [ ...this.files ];
-    this.updateFilesInfo();
+    const filesCopy = [...this.files$.value];
+    filesCopy.splice(index, 1);
+    this.files$.next(filesCopy);
   }
 
   fileBrowse(e: Event) {
@@ -90,51 +105,24 @@ export class EncodeDataComponent implements OnInit {
     }
   }
 
-  updateFilesInfo() {
-    this.totalFileSize = this.files.map(file => file.size).reduce((prev, curr) => prev + curr, 0);
-    this.totalFileSizeFormatted = formatBytes(this.totalFileSize);
-    this.calculateSpaceLeft();
-  }
-
-  calculateAvailableSpace(image: HTMLImageElement, color: Color) {
-    if (image && color) {
-      this.availableSpace = Math.floor(image.width * image.height * (color.r + color.g + color.b) / 8)
-      this.availableSpaceFormatted = formatBytes(this.availableSpace);
-      this.calculateSpaceLeft();
+  updateImage(files: FileList) {
+    const arrFiles = Array.from(files);
+    if (arrFiles.length === 1) {
+      const url = URL.createObjectURL(arrFiles[0]);
+      this.loading$.next(true);
+      this.imageEncryptService.createImage(url as any).then(image => this.image$.next(image));
     }
-  }
-
-  calculateSpaceLeft() {
-    if (this.totalFileSize != null && this.availableSpace != null) {
-      this.spaceLeft = this.availableSpace - this.totalFileSize;
-      this.spaceLeftFormatted = formatBytes(this.spaceLeft);
-    }
-  }
-
-  async getImage(src: string): Promise<HTMLImageElement> {
-    return new Promise(resolve => {
-      const image = new Image();
-      image.onload = () => {
-        const { r, g, b } = this.formGroup.value;
-        this.calculateAvailableSpace(image, new Color(r, g, b));
-        this.image$.next(image);
-        this.encoded$.next(false);
-        resolve(image);
-      }
-      image.src = src;
-    })
   }
 
   updateViewState(viewState: CanvasViewState) {
     this.viewState = viewState;
   }
 
-  async updateImage(files: FileList) {
-    const arrFiles = Array.from(files);
-    if (arrFiles.length === 1) {
-      const url = URL.createObjectURL(arrFiles[0]);
-      await this.getImage(url as any);
-    }
+  reset() {
+    this.image$.next(null);
+    this.files$.next([]);
+    this.formGroup.reset({ r: 4, g: 4, b: 4 });
+    this.encoded$.next(false);
   }
 
   updatePosition(position: Vector | null) {
@@ -151,46 +139,32 @@ export class EncodeDataComponent implements OnInit {
     download(this.renderer, this.secondaryCanvas.canvasComponent.canvas.toDataURL(), 'encoded.jpg');
   }
 
-  encodeIntoImage() {
-    this.encodeData(this.formGroup.value);
+  calculateSpaceLeft() {
+    if (this.totalFileSize && this.availableImageSpace) {
+      this.spaceLeft = this.wrapSize(this.availableImageSpace.bytes - this.totalFileSize.bytes);
+    }
   }
 
-  async encodeData(meta: ImageMetaInfo) {
+  wrapSize(bytes: number): Size {
+    return { bytes, formatted: formatBytes(bytes) };
+  }
+
+  async encodeData() {
+    const meta = this.formGroup.value;
     const imageData = this.mainCanvas.getImageData();
 
     if (imageData) {
       this.encoded$.next(false);
-      const filesInfo: FileMeta[] = [];
-      const fileBinaryStrings: string[] = [];
-      for (let i = 0; i < this.files.length; i++) {
-        const buffer = await this.files[i].arrayBuffer();
-        const fileBinaryString = ImageEncrypt.convertToBinaryString(buffer);
 
-        filesInfo.push({ size: fileBinaryString.length, name: this.files[i].name })
-        fileBinaryStrings.push(fileBinaryString);
-      }
-
-      meta.files = filesInfo;
-
-      const metadataBuffer = await ImageEncrypt.convertDataToBuffer(JSON.stringify(meta));
-      const metadataBinaryString = ImageEncrypt.convertToBinaryString(metadataBuffer);
-      const binaryStringOfMetadataLength = metadataBinaryString.length.toString(2).padStart(this.metadataBitLength, '0');
-
-      const endImageIndexOfMetadataLength = await ImageEncrypt.encodeBinaryString(imageData, 0, [2, 2, 2], binaryStringOfMetadataLength);
-      const endImageIndexOfMetadata = await ImageEncrypt.encodeBinaryString(imageData, endImageIndexOfMetadataLength, [2, 2, 2], metadataBinaryString);
-
-      let startOfData = endImageIndexOfMetadata;
-
-      for (let i = 0; i < filesInfo.length; i++) {
-        startOfData = await ImageEncrypt.encodeBinaryString(imageData, startOfData, [meta.r, meta.g, meta.b], fileBinaryStrings[i]);
-      }
-
-      this.encoded$.next(true);
+      await this.imageEncryptService.encodeData(meta, this.files$.value, imageData);
       this.secondaryCanvas.putImageData(imageData);
+
       setTimeout(() => {
         this.secondaryCanvas.canvasComponent.onResize();
         this.mainCanvas.canvasComponent.onResize();
       })
+
+      this.encoded$.next(true);
     }
   }
 }

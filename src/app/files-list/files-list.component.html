@@ -1,5 +1,5 @@
 <ng-template [ngIf]="fileWrappers.length > 0" [ngIfElse]="noFilesTmplRef">
-  <div class="mx-4 border-2 border-grey-800">
+  <div class="border-2 my-2 border-grey-800 bg-grey-700">
     <div *ngIf="title" class="flex items-center justify-center text-xl font-bold p-2 border-b-2 border-grey-800">{{ title }}</div>
     <table class="custom-table w-full">
       <thead>
@@ -11,12 +11,8 @@
       </thead>
       <tbody>
       <tr *ngFor="let file of fileWrappers; let i = index">
-        <td>
-          {{ file.file.name }}
-        </td>
-        <td>
-          {{ file.humanReadableSize }}
-        </td>
+        <td>{{ file.file.name }}</td>
+        <td>{{ file.humanReadableSize }}</td>
         <td>
           <div class="flex flex-col">
             <button
@@ -39,19 +35,10 @@
       </tbody>
     </table>
   </div>
-<!--  <div class="rounded border border-gray-900 flex justify-between p-2 mx-4 mb-3" *ngFor="let file of fileWrappers; let i = index">-->
-<!--    <div class="flex">-->
-<!--      <img class="max-w-15 max-h-10" *ngIf="file.type === fileType.Image" [src]="file.objUrl" [alt]="file.file?.name">-->
-<!--      <div class="flex flex-col">-->
-<!--        <div class="break-all">{{ file.file.name }}</div>-->
-<!--        <p class="">{{ file.humanReadableSize }}</p>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  </div>-->
 </ng-template>
 
 <ng-template #noFilesTmplRef>
-  <div class="p-4 m-4 border-2 border-gray-800 flex justify-center items-center font-semibold text-xl">
+  <div class="p-4 my-2 border-2 border-grey-800 bg-grey-700 flex justify-center items-center font-semibold text-xl">
     No files
   </div>
 </ng-template>

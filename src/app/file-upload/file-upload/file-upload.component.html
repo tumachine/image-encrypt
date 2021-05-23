@@ -1,13 +1,10 @@
-<div class="h-full p-4">
-  <div class="h-full relative flex items-center justify-evenly border-2 border-gray-400 border-dashed" appDragAndDrop (fileDropped)="fileDropped($event)">
+<div class="h-full">
+  <div class="h-full relative flex items-center justify-evenly border-2 border-gray-400 bg-grey-700 border-dashed" appDragAndDrop (fileDropped)="fileDropped($event)">
     <div class="w-64 h-36 flex flex-col items-center justify-evenly">
       <div class="text-center font-semibold">{{ title }}</div>
       <div>or</div>
       <input class="hidden" type="file" id="fileDropRef" multiple (change)="fileBrowse($event)" />
-      <label
-        class="focus:outline-none text-white text-sm py-2.5 px-5 rounded-md bg-blue-500 hover:bg-blue-600 hover:shadow-lg cursor-pointer"
-        for="fileDropRef"
-      >
+      <label class="btn btn-primary flex justify-center" for="fileDropRef">
         Browse for file(s)
       </label>
     </div>

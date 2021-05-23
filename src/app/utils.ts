@@ -29,4 +29,5 @@ export function download(renderer: Renderer2, url: string, name: string) {
   a.download = name;
   a.click();
   window.URL.revokeObjectURL(url);
+  renderer.removeChild(document.body, a);
 }

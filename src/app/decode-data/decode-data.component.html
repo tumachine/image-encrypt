@@ -1,25 +1,41 @@
-<div class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700" *ngIf="{ image: image$ | async } as async">
-  <div class="interface m-0.5 row-span-2 col-span-2 flex flex-col justify-between overflow-y-auto" [formGroup]="formGroup">
+<div
+  class="grid-wrapper grid h-screen bg-black grid-cols-7 grid-rows-2 bg-grey-700"
+  *ngIf="{
+    image: image$ | async,
+    files: files$ | async,
+    loading: loading$ | async,
+    errorMessage: errorMessage$ | async,
+    decoded: decoded$ | async
+  } as async"
+>
+  <div class="interface row-span-2 col-span-2" [formGroup]="formGroup">
     <div class="flex flex-col">
-      <div class="flex justify-center text-3xl p-5 font-semibold">IMAGE DECRYPTION</div>
-      <div class="mt-4">
-        <app-files-list [files]="files$ | async" title="Decoded files:" [includeDelete]="false"></app-files-list>
+      <div class="flex p-2 uppercase items-center">
+        <a routerLink="/encode" class="border bg-grey-500 hover:bg-grey-400 w-3/12 rounded p-2 uppercase text-xs text-black no-underline">
+          switch to encode mode
+        </a>
+        <div class="flex-grow text-center text-4xl font-bold text-grey-900">Decode mode</div>
       </div>
-      <div *ngIf="loading$ | async as loading" class="flex justify-center items-center text-xl text-red-900">LOADING</div>
+      <app-files-list *ngIf="async.files.length > 0" [files]="async.files" title="Decoded files:" [includeDelete]="false"></app-files-list>
     </div>
     <div>
-      <div *ngIf="errorMessage$ | async as errorMessage" class="uppercase flex justify-center items-center text-xl">{{ errorMessage }}</div>
-      <button
-        (click)="decodeData()"
-        class="focus:outline-none w-full h-16 text-white text-xl py-2.5 px-5 rounded bg-blue-700 hover:bg-blue-600 hover:shadow-lg"
-      >
-        DECODE
-      </button>
+      <div *ngIf="!async.image" class="alert alert-danger">Upload image to decode</div>
+      <div *ngIf="async.decoded" class="alert alert-success">Successfully decoded!</div>
+      <div *ngIf="async.loading" class="alert alert-primary">LOADING</div>
+      <div *ngIf="async.errorMessage" class="alert alert-danger">{{ async.errorMessage }}</div>
+      <div class="flex">
+        <button (click)="reset()" [disabled]="!async.image" class="btn btn-light flex justify-center mx-1">
+          RESET
+        </button>
+        <button (click)="decodeData()" [disabled]="!async.image" class="btn btn-primary flex justify-center mx-1">
+          DECODE
+        </button>
+      </div>
     </div>
   </div>
 
   <div
-    class="col-span-5 row-span-2 m-5 border-4 border-gray-800 bg-grey-800 border-dotted rounded-md flex justify-center items-center relative"
+    class="col-span-5 row-span-2 m-5 border-4 border-gray-800 border-dotted rounded-md flex justify-center items-center relative"
     appDragAndDrop
     (fileDropped)="updateImage($event)"
     *ngIf="!async.image"
@@ -27,11 +43,8 @@
     <div class="flex flex-col justify-center items-center">
       <div class="text-center text-4xl text-white">DROP IMAGE HERE</div>
       <div class="text-2xl my-5">OR</div>
-      <input class="hidden" type="file" id="fileDropRef" (change)="fileBrowse($event)" />
-      <label
-        class="focus:outline-none text-white text-xl py-2.5 px-5 rounded-md bg-blue-500 hover:bg-blue-600 hover:shadow-lg cursor-pointer"
-        for="fileDropRef"
-      >
+      <input class="hidden" type="file" id="imageDropRef" (change)="fileBrowse($event)" />
+      <label class="btn btn-primary flex justify-center" for="imageDropRef">
         Browse for image
       </label>
     </div>

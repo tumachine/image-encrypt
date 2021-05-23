@@ -1,15 +1,15 @@
-import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
-import { ImageEncrypt, ImageMetaInfo } from '../image-encrypt';
 import { CanvasWrapperComponent } from '../canvas-wrapper/canvas-wrapper.component';
 import { BehaviorSubject } from 'rxjs';
+import { ImageEncryptService } from '../image-encrypt.service';
 
 @Component({
   selector: 'app-decode-data',
   templateUrl: './decode-data.component.html',
   styleUrls: ['./decode-data.component.css']
 })
-export class DecodeDataComponent implements AfterViewInit {
+export class DecodeDataComponent {
   @ViewChild(CanvasWrapperComponent)
   canvasWrapper!: CanvasWrapperComponent;
 
@@ -21,15 +21,13 @@ export class DecodeDataComponent implements AfterViewInit {
 
   loading$ = new BehaviorSubject<boolean>(false);
 
+  decoded$ = new BehaviorSubject<boolean>(false);
+
   errorMessage$ = new BehaviorSubject<string>('');
 
   readonly formGroup = this.fb.group({})
 
-  constructor(private fb: FormBuilder) {}
-
-  async ngAfterViewInit() {
-    // await this.getImage('assets/images/drop-image.jpg');
-  }
+  constructor(private fb: FormBuilder, private imageEncryptService: ImageEncryptService) {}
 
   fileBrowse(e: Event) {
     const files = (e.target as HTMLInputElement).files;
@@ -38,59 +36,36 @@ export class DecodeDataComponent implements AfterViewInit {
     }
   }
 
-  async updateImage(files: FileList) {
+  updateImage(files: FileList) {
     const arrFiles = Array.from(files);
     if (arrFiles.length === 1) {
       const url = URL.createObjectURL(arrFiles[0]);
-      await this.getImage(url as any);
+      this.imageEncryptService.createImage(url).then(image => this.image$.next(image));
     }
   }
 
-  async getImage(src: string): Promise<HTMLImageElement> {
-    return new Promise(resolve => {
-      const image = new Image();
-      image.onload = () => {
-        this.image$.next(image);
-        resolve(image);
-      }
-      image.src = src;
-    })
+  reset() {
+    this.decoded$.next(false);
+    this.errorMessage$.next('');
+    this.image$.next(null);
+    this.files$.next([]);
   }
 
   async decodeData() {
-    this.loading$.next(true);
     const imageData = this.canvasWrapper.getImageData();
     if (imageData) {
+      this.loading$.next(true);
       try {
-        const decodedLengthOfMetadata = ImageEncrypt.decodePixelsRange(imageData.data, 0, this.metadataBitLength, [2, 2, 2]);
-        const lengthOfMetadataInBytes = parseInt(decodedLengthOfMetadata.binaryString, 2);
-
-        if (lengthOfMetadataInBytes / 8 / 1024 > 10) {
-          throw new Error('');
-        }
-
-        const decodedMetadata = ImageEncrypt.decodePixelsRange(imageData.data, decodedLengthOfMetadata.nextPixelIndex, lengthOfMetadataInBytes, [2, 2, 2]);
-        const decodedMetadataBuffer = ImageEncrypt.convertBinaryStringToBuffer(decodedMetadata.binaryString);
-        const metadataBlob = new Blob([decodedMetadataBuffer]);
-        const metadataText = await metadataBlob.text();
-        const dataInfo: ImageMetaInfo = JSON.parse(metadataText);
-        let decodedData = decodedMetadata;
-
-        const files = [];
-        for (let i = 0; i < dataInfo.files.length; i++) {
-          decodedData = ImageEncrypt.decodePixelsRange(imageData.data, decodedData.nextPixelIndex, dataInfo.files[i].size, [dataInfo.r, dataInfo.g, dataInfo.b]);
-          const decodedBuffer = ImageEncrypt.convertBinaryStringToBuffer(decodedData.binaryString);
-          const file = new File([decodedBuffer], dataInfo.files[i].name)
-          files.push(file);
-        }
+        this.decoded$.next(false);
+        this.errorMessage$.next('');
+        const { meta, files } = await this.imageEncryptService.decodeData(imageData);
 
         this.files$.next(files);
-        this.loading$.next(false);
-        this.errorMessage$.next('Success!');
+        this.decoded$.next(true);
       } catch {
         this.errorMessage$.next('Cannot decrypt this image')
       }
-
+      this.loading$.next(false);
     }
   }
 }
